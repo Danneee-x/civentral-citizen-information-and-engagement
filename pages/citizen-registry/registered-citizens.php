@@ -55,139 +55,140 @@ include '../../includes/sidebar.php';
 <main class="flex-1 p-4 md:p-6 lg:p-8 w-full overflow-y-auto bg-slate-50/50 min-h-[calc(100vh-4rem)]">
     
     <!-- KPI Cards Row -->
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-6">
+    <!-- KPI Cards Row (2 lines x 4 boxes on desktop, responsive on smaller screens) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <!-- Card 1 -->
-        <div onclick="filterByCard('all')" data-card-type="all" title="Click to view all citizens" class="kpi-stat-card bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group select-none">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-users text-blue-500 text-lg"></i>
+        <div onclick="filterByCard('all')" data-card-type="all" title="Click to view all citizens" class="kpi-stat-card bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group select-none">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-blue-50/80 flex items-center justify-center shrink-0 border border-blue-100">
+                    <i class="fa-solid fa-users text-blue-600 text-xl"></i>
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-tight">Total Registered<br>Citizens</p>
-                    <h3 class="text-xl font-black text-slate-800 mt-1">12,458</h3>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">Total Registered Citizens</p>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">12,458</h3>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5 mt-3 text-[10px] font-semibold">
-                <span class="text-emerald-500 flex items-center gap-1"><i class="fa-solid fa-arrow-up"></i> 3.45%</span>
+            <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
+                <span class="text-emerald-600 flex items-center gap-1"><i class="fa-solid fa-arrow-up text-[10px]"></i> 3.45%</span>
                 <span class="text-slate-400">vs last month</span>
             </div>
         </div>
 
         <!-- Card 2 -->
-        <div onclick="filterByCard('Active')" data-card-type="Active" title="Click to view active citizens" class="kpi-stat-card bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group select-none">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-user-check text-emerald-500 text-lg"></i>
+        <div onclick="filterByCard('Active')" data-card-type="Active" title="Click to view active citizens" class="kpi-stat-card bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group select-none">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-emerald-50/80 flex items-center justify-center shrink-0 border border-emerald-100">
+                    <i class="fa-solid fa-user-check text-emerald-600 text-xl"></i>
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-tight">Active<br>Citizens</p>
-                    <h3 class="text-xl font-black text-slate-800 mt-1">11,234</h3>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">Active Citizens</p>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">11,234</h3>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5 mt-3 text-[10px] font-semibold">
-                <span class="text-emerald-500 flex items-center gap-1"><i class="fa-solid fa-arrow-up"></i> 2.91%</span>
+            <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
+                <span class="text-emerald-600 flex items-center gap-1"><i class="fa-solid fa-arrow-up text-[10px]"></i> 2.91%</span>
                 <span class="text-slate-400">vs last month</span>
             </div>
         </div>
 
         <!-- Card 3 -->
-        <div onclick="filterByCard('Senior Citizen')" data-card-type="Senior Citizen" title="Click to view senior citizens" class="kpi-stat-card bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-orange-300 transition-all cursor-pointer group select-none">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-person-cane text-orange-500 text-lg"></i>
+        <div onclick="filterByCard('Senior Citizen')" data-card-type="Senior Citizen" title="Click to view senior citizens" class="kpi-stat-card bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-orange-300 transition-all cursor-pointer group select-none">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-orange-50/80 flex items-center justify-center shrink-0 border border-orange-100">
+                    <i class="fa-solid fa-person-cane text-orange-600 text-xl"></i>
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-tight">Senior<br>Citizens</p>
-                    <h3 class="text-xl font-black text-slate-800 mt-1">1,856</h3>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">Senior Citizens</p>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">1,856</h3>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5 mt-3 text-[10px] font-semibold">
-                <span class="text-emerald-500 flex items-center gap-1"><i class="fa-solid fa-arrow-up"></i> 1.88%</span>
+            <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
+                <span class="text-emerald-600 flex items-center gap-1"><i class="fa-solid fa-arrow-up text-[10px]"></i> 1.88%</span>
                 <span class="text-slate-400">vs last month</span>
             </div>
         </div>
 
         <!-- Card 4 -->
-        <div onclick="filterByCard('PWD')" data-card-type="PWD" title="Click to view PWD citizens" class="kpi-stat-card bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-purple-300 transition-all cursor-pointer group select-none">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
-                    <i class="fa-brands fa-accessible-icon text-purple-500 text-lg"></i>
+        <div onclick="filterByCard('PWD')" data-card-type="PWD" title="Click to view PWD citizens" class="kpi-stat-card bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-purple-300 transition-all cursor-pointer group select-none">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-purple-50/80 flex items-center justify-center shrink-0 border border-purple-100">
+                    <i class="fa-brands fa-accessible-icon text-purple-600 text-xl"></i>
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-tight">PWD<br>&nbsp;</p>
-                    <h3 class="text-xl font-black text-slate-800 mt-1">623</h3>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">PWD Citizens</p>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">623</h3>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5 mt-3 text-[10px] font-semibold">
-                <span class="text-emerald-500 flex items-center gap-1"><i class="fa-solid fa-arrow-up"></i> 2.14%</span>
+            <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
+                <span class="text-emerald-600 flex items-center gap-1"><i class="fa-solid fa-arrow-up text-[10px]"></i> 2.14%</span>
                 <span class="text-slate-400">vs last month</span>
             </div>
         </div>
 
         <!-- Card 5 -->
-        <div onclick="filterByCard('Solo Parent')" data-card-type="Solo Parent" title="Click to view solo parents" class="kpi-stat-card bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-pink-300 transition-all cursor-pointer group select-none">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-full bg-pink-50 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-person-breastfeeding text-pink-500 text-lg"></i>
+        <div onclick="filterByCard('Solo Parent')" data-card-type="Solo Parent" title="Click to view solo parents" class="kpi-stat-card bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-pink-300 transition-all cursor-pointer group select-none">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-pink-50/80 flex items-center justify-center shrink-0 border border-pink-100">
+                    <i class="fa-solid fa-person-breastfeeding text-pink-600 text-xl"></i>
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-tight">Solo<br>Parents</p>
-                    <h3 class="text-xl font-black text-slate-800 mt-1">742</h3>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">Solo Parents</p>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">742</h3>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5 mt-3 text-[10px] font-semibold">
-                <span class="text-emerald-500 flex items-center gap-1"><i class="fa-solid fa-arrow-up"></i> 1.35%</span>
+            <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
+                <span class="text-emerald-600 flex items-center gap-1"><i class="fa-solid fa-arrow-up text-[10px]"></i> 1.35%</span>
                 <span class="text-slate-400">vs last month</span>
             </div>
         </div>
 
         <!-- Card 6 -->
-        <div onclick="filterByCard('4Ps Beneficiary')" data-card-type="4Ps Beneficiary" title="Click to view 4Ps beneficiaries" class="kpi-stat-card bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-cyan-300 transition-all cursor-pointer group select-none">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-full bg-cyan-50 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-people-group text-cyan-500 text-lg"></i>
+        <div onclick="filterByCard('4Ps Beneficiary')" data-card-type="4Ps Beneficiary" title="Click to view 4Ps beneficiaries" class="kpi-stat-card bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-cyan-300 transition-all cursor-pointer group select-none">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-cyan-50/80 flex items-center justify-center shrink-0 border border-cyan-100">
+                    <i class="fa-solid fa-people-group text-cyan-600 text-xl"></i>
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-tight">4Ps<br>Beneficiaries</p>
-                    <h3 class="text-xl font-black text-slate-800 mt-1">1,204</h3>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">4Ps Beneficiaries</p>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">1,204</h3>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5 mt-3 text-[10px] font-semibold">
-                <span class="text-emerald-500 flex items-center gap-1"><i class="fa-solid fa-arrow-up"></i> 2.02%</span>
+            <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
+                <span class="text-emerald-600 flex items-center gap-1"><i class="fa-solid fa-arrow-up text-[10px]"></i> 2.02%</span>
                 <span class="text-slate-400">vs last month</span>
             </div>
         </div>
 
         <!-- Card 7 -->
-        <div onclick="filterByCard('New Registrations')" data-card-type="New Registrations" title="Click to view new registrations" class="kpi-stat-card bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group select-none">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
-                    <i class="fa-regular fa-calendar-check text-indigo-500 text-lg"></i>
+        <div onclick="filterByCard('New Registrations')" data-card-type="New Registrations" title="Click to view new registrations" class="kpi-stat-card bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group select-none">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-indigo-50/80 flex items-center justify-center shrink-0 border border-indigo-100">
+                    <i class="fa-regular fa-calendar-check text-indigo-600 text-xl"></i>
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-tight">New Registrations<br>This Month</p>
-                    <h3 class="text-xl font-black text-slate-800 mt-1">246</h3>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">New Registrations</p>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">246</h3>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5 mt-3 text-[10px] font-semibold">
-                <span class="text-emerald-500 flex items-center gap-1"><i class="fa-solid fa-arrow-up"></i> 12.40%</span>
+            <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
+                <span class="text-emerald-600 flex items-center gap-1"><i class="fa-solid fa-arrow-up text-[10px]"></i> 12.40%</span>
                 <span class="text-slate-400">vs last month</span>
             </div>
         </div>
 
         <!-- Card 8 -->
-        <div onclick="filterByCard('Pending Validation')" data-card-type="Pending Validation" title="Click to view pending validation citizens" class="kpi-stat-card bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md hover:border-amber-300 transition-all cursor-pointer group select-none">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-shield-halved text-amber-500 text-lg"></i>
+        <div onclick="filterByCard('Pending Validation')" data-card-type="Pending Validation" title="Click to view pending validation citizens" class="kpi-stat-card bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-amber-300 transition-all cursor-pointer group select-none">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-amber-50/80 flex items-center justify-center shrink-0 border border-amber-100">
+                    <i class="fa-solid fa-shield-halved text-amber-600 text-xl"></i>
                 </div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wide leading-tight">Pending<br>Validation</p>
-                    <h3 class="text-xl font-black text-slate-800 mt-1">189</h3>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">Pending Validation</p>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">189</h3>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5 mt-3 text-[10px] font-semibold">
-                <span class="text-red-500 flex items-center gap-1"><i class="fa-solid fa-arrow-up"></i> 4.21%</span>
+            <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
+                <span class="text-red-500 flex items-center gap-1"><i class="fa-solid fa-arrow-up text-[10px]"></i> 4.21%</span>
                 <span class="text-slate-400">vs last month</span>
             </div>
         </div>
