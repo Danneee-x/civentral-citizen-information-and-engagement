@@ -203,7 +203,7 @@ include '../../includes/sidebar.php';
             <!-- Filters Section -->
             <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <!-- Search Bar -->
-                <div class="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center mb-6">
+                <div class="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
                     <div class="relative w-full flex-1">
                         <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                         <input type="text" id="searchInput" oninput="filterCitizensByDistrict()" placeholder="Search by Name, Household ID, National ID, Voter ID..." class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-2 focus:ring-[#0f53d1]/50 focus:border-[#0f53d1] block pl-11 p-3 transition outline-none placeholder-slate-400 font-medium">
@@ -214,15 +214,15 @@ include '../../includes/sidebar.php';
                             <span>Search</span>
                         </button>
                         <button id="toggleFiltersBtn" onclick="toggleAdvancedFilters()" class="px-4 py-3 text-xs font-bold text-[#0f53d1] bg-blue-50/50 rounded-xl border border-[#0f53d1]/20 hover:bg-blue-50 transition cursor-pointer flex items-center gap-2">
-                            <i class="fa-solid fa-filter-list"></i>
-                            <span id="toggleFiltersText">Hide Filters</span>
-                            <i id="toggleFiltersIcon" class="fa-solid fa-chevron-up text-[10px] ml-1 transition-transform"></i>
+                            <i class="fa-solid fa-sliders text-xs"></i>
+                            <span id="toggleFiltersText">Show Filters</span>
+                            <i id="toggleFiltersIcon" class="fa-solid fa-chevron-down text-[10px] ml-1 transition-transform"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Advanced Filters -->
-                <div id="advancedFiltersContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-x-4 gap-y-5">
+                <!-- Advanced Filters (Hidden by Default) -->
+                <div id="advancedFiltersContainer" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-x-4 gap-y-5 mt-5 border-t border-slate-100 pt-5">
                     
                     <div class="space-y-1.5">
                         <label class="text-[11px] font-bold text-slate-500">District</label>
@@ -658,7 +658,7 @@ function onDistrictChange() {
     filterCitizensByDistrict();
 }
 
-let activeCardFilter = '';
+let activeCardFilters = new Set();
 let currentPage = 1;
 let rowsPerPage = 10;
 
@@ -674,18 +674,21 @@ function goToPage(page) {
 }
 
 function filterByCard(cardType) {
-    if (activeCardFilter === cardType) {
-        activeCardFilter = '';
+    if (activeCardFilters.has(cardType)) {
+        activeCardFilters.delete(cardType);
     } else {
-        activeCardFilter = cardType;
+        activeCardFilters.add(cardType);
     }
     currentPage = 1;
 
     const statusFilter = document.getElementById('statusFilter');
     if (statusFilter) {
-        if (['Active', 'Senior Citizen', 'Pending Validation', 'Inactive', 'Deceased', 'Transferred Out'].includes(activeCardFilter)) {
-            statusFilter.value = activeCardFilter;
-        } else if (activeCardFilter === 'all' || activeCardFilter === '') {
+        const activeStatuses = Array.from(activeCardFilters).filter(c => 
+            ['Active', 'Senior Citizen', 'Pending Validation', 'Inactive', 'Deceased', 'Transferred Out'].includes(c)
+        );
+        if (activeStatuses.length === 1) {
+            statusFilter.value = activeStatuses[0];
+        } else {
             statusFilter.value = '';
         }
     }
@@ -703,10 +706,12 @@ function updateStatCardsHighlight() {
     const cards = document.querySelectorAll('.kpi-stat-card');
     cards.forEach(card => {
         const type = card.getAttribute('data-card-type');
-        if (type && type === activeCardFilter && activeCardFilter !== '' && activeCardFilter !== 'all') {
-            card.classList.add('ring-2', 'ring-[#0f53d1]', 'shadow-md');
+        if (type && activeCardFilters.has(type)) {
+            card.classList.add('ring-2', 'ring-[#0f53d1]', 'border-[#0f53d1]', 'shadow-md', 'bg-blue-50/20');
+            card.classList.remove('border-slate-200/80');
         } else {
-            card.classList.remove('ring-2', 'ring-[#0f53d1]', 'shadow-md');
+            card.classList.remove('ring-2', 'ring-[#0f53d1]', 'border-[#0f53d1]', 'shadow-md', 'bg-blue-50/20');
+            card.classList.add('border-slate-200/80');
         }
     });
 }
@@ -755,16 +760,17 @@ function filterCitizensByDistrict() {
         else if (selectedAgeRange === '60+') matchesAge = rowAge >= 60;
 
         let matchesCard = true;
-        if (activeCardFilter === 'PWD') {
-            matchesCard = rowTags.includes('PWD');
-        } else if (activeCardFilter === 'Solo Parent') {
-            matchesCard = rowTags.includes('Solo Parent');
-        } else if (activeCardFilter === '4Ps Beneficiary') {
-            matchesCard = rowTags.includes('4Ps Beneficiary');
-        } else if (activeCardFilter === 'New Registrations') {
-            matchesCard = rowDate.includes('May 2025');
-        } else if (activeCardFilter === 'Pending Validation') {
-            matchesCard = rowStatus === 'Pending Validation' || rowTags.includes('Pending Validation');
+        if (activeCardFilters.size > 0 && !activeCardFilters.has('all')) {
+            matchesCard = Array.from(activeCardFilters).every(filter => {
+                if (filter === 'PWD') return rowTags.includes('PWD');
+                if (filter === 'Solo Parent') return rowTags.includes('Solo Parent');
+                if (filter === '4Ps Beneficiary') return rowTags.includes('4Ps Beneficiary');
+                if (filter === 'New Registrations') return rowDate.includes('May 2025');
+                if (filter === 'Pending Validation') return rowStatus === 'Pending Validation' || rowTags.includes('Pending Validation');
+                if (filter === 'Active') return rowStatus === 'Active';
+                if (filter === 'Senior Citizen') return rowStatus === 'Senior Citizen' || rowAge >= 60 || rowTags.includes('Senior Citizen');
+                return rowStatus === filter;
+            });
         }
 
         const matchesDistrict = !selectedDistrict || rowDistrict === selectedDistrict;
@@ -847,7 +853,7 @@ function renderPaginationControls(page, totalPages) {
 }
 
 function resetDistrictFilters() {
-    activeCardFilter = '';
+    activeCardFilters.clear();
     updateStatCardsHighlight();
 
     const districtFilter = document.getElementById('districtFilter');

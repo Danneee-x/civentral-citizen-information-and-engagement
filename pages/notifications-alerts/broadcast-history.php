@@ -104,7 +104,7 @@ include '../../includes/sidebar.php';
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
         <!-- Left Table Container (8 Cols when drawer open, 12 Cols when closed) -->
-        <div id="tableContainer" class="lg:col-span-8 space-y-4 transition-all duration-300">
+        <div id="tableContainer" class="lg:col-span-12 space-y-4 transition-all duration-300">
             
             <!-- Filters & Search Bar Card -->
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
@@ -177,8 +177,8 @@ include '../../includes/sidebar.php';
                         </thead>
                         <tbody id="broadcastTableBody" class="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                             
-                            <!-- Row 1 (Active Selected Default) -->
-                            <tr onclick="selectBroadcastRow(this, 1)" class="broadcast-row bg-blue-50/40 hover:bg-blue-50/60 transition cursor-pointer" data-id="1" data-category="General Announcement" data-status="Delivered">
+                            <!-- Row 1 -->
+                            <tr onclick="selectBroadcastRow(this, 1)" class="broadcast-row hover:bg-slate-50 transition cursor-pointer" data-id="1" data-category="General Announcement" data-status="Delivered">
                                 <td class="py-3.5 px-4">
                                     <div class="flex items-center gap-3">
                                         <div class="w-8 h-8 rounded-xl bg-blue-50 text-[#0f53d1] flex items-center justify-center shrink-0 text-sm">
@@ -310,7 +310,7 @@ include '../../includes/sidebar.php';
                                 <td class="py-3.5 px-4">
                                     <div class="flex items-center gap-3">
                                         <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 text-sm">
-                                            <i class="fa-solid fa-calendar-star"></i>
+                                            <i class="fa-solid fa-calendar-days"></i>
                                         </div>
                                         <div class="min-w-0">
                                             <p class="font-bold text-slate-900 truncate">Barangay Fiesta 2025</p>
@@ -553,7 +553,7 @@ include '../../includes/sidebar.php';
         </div>
 
         <!-- Right Side Panel: Alert Details (4 Cols) -->
-        <div id="alertDetailsDrawer" class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5 sticky top-6">
+        <div id="alertDetailsDrawer" class="hidden lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5 sticky top-6">
             
             <!-- Drawer Header -->
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -866,7 +866,18 @@ const broadcastData = {
     }
 };
 
+let activeBroadcastId = null;
+
 function selectBroadcastRow(rowElement, id) {
+    const drawer = document.getElementById('alertDetailsDrawer');
+    const tableContainer = document.getElementById('tableContainer');
+
+    if (activeBroadcastId === id && !drawer.classList.contains('hidden')) {
+        closeDetailsDrawer();
+        return;
+    }
+
+    activeBroadcastId = id;
     document.querySelectorAll('.broadcast-row').forEach(r => {
         r.classList.remove('bg-blue-50/40', 'bg-blue-50/60');
     });
@@ -904,13 +915,15 @@ function selectBroadcastRow(rowElement, id) {
     document.getElementById('drawerAlertId').innerHTML = `<span>${data.alertId}</span> <i class="fa-regular fa-copy text-slate-400 hover:text-slate-700 cursor-pointer" onclick="copyAlertId('${data.alertId}')"></i>`;
 
     // Unhide drawer if hidden
-    const drawer = document.getElementById('alertDetailsDrawer');
-    const tableContainer = document.getElementById('tableContainer');
     drawer.classList.remove('hidden');
     tableContainer.className = "lg:col-span-8 space-y-4 transition-all duration-300";
 }
 
 function closeDetailsDrawer() {
+    activeBroadcastId = null;
+    document.querySelectorAll('.broadcast-row').forEach(r => {
+        r.classList.remove('bg-blue-50/40', 'bg-blue-50/60');
+    });
     const drawer = document.getElementById('alertDetailsDrawer');
     const tableContainer = document.getElementById('tableContainer');
     drawer.classList.add('hidden');

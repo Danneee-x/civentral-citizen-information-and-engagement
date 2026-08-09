@@ -331,7 +331,7 @@ include '../../includes/sidebar.php';
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         <!-- Left Table Container (8 Cols when drawer open, 12 Cols when closed) -->
-        <div id="tableContainer" class="lg:col-span-8 space-y-4 transition-all duration-300">
+        <div id="tableContainer" class="lg:col-span-12 space-y-4 transition-all duration-300">
             
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 
@@ -355,11 +355,11 @@ include '../../includes/sidebar.php';
                         </thead>
                         <tbody id="recipientsTableBody" class="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                             
-                            <!-- Row 1 (Active Default) -->
-                            <tr onclick="selectRecipientRow(this, 1)" class="recipient-row bg-blue-50/40 hover:bg-blue-50/60 transition cursor-pointer" data-id="1" data-channel="SMS" data-status="Delivered">
+                            <!-- Row 1 -->
+                            <tr onclick="selectRecipientRow(this, 1)" class="recipient-row hover:bg-slate-50 transition cursor-pointer" data-id="1" data-channel="SMS" data-status="Delivered">
                                 <td class="py-3.5 px-4">
                                     <p class="font-bold text-slate-900">Maria Santos</p>
-                                    <p class="text-[10px] text-slate-400">Purok 1, Sitio Kalinawan</p>
+                                    <p class="text-[10px] text-slate-400">Barangay 178, District 3</p>
                                 </td>
                                 <td class="py-3.5 px-3 font-semibold text-slate-800">0917 123 4567</td>
                                 <td class="py-3.5 px-3">
@@ -382,7 +382,7 @@ include '../../includes/sidebar.php';
                             <tr onclick="selectRecipientRow(this, 2)" class="recipient-row hover:bg-slate-50 transition cursor-pointer" data-id="2" data-channel="In-App" data-status="Read">
                                 <td class="py-3.5 px-4">
                                     <p class="font-bold text-slate-900">Juan Dela Cruz</p>
-                                    <p class="text-[10px] text-slate-400">Purok 2, Sitio Maaliwalas</p>
+                                    <p class="text-[10px] text-slate-400">Barangay 12, District 2</p>
                                 </td>
                                 <td class="py-3.5 px-3 font-semibold text-slate-800">In-App User</td>
                                 <td class="py-3.5 px-3">
@@ -405,7 +405,7 @@ include '../../includes/sidebar.php';
                             <tr onclick="selectRecipientRow(this, 3)" class="recipient-row hover:bg-slate-50 transition cursor-pointer" data-id="3" data-channel="Email" data-status="Delivered">
                                 <td class="py-3.5 px-4">
                                     <p class="font-bold text-slate-900">Ana Reyes</p>
-                                    <p class="text-[10px] text-slate-400">Purok 1, Sitio Kalinawan</p>
+                                    <p class="text-[10px] text-slate-400">Barangay 1, District 1</p>
                                 </td>
                                 <td class="py-3.5 px-3 font-semibold text-slate-800">anareyes88@gmail.com</td>
                                 <td class="py-3.5 px-3">
@@ -428,7 +428,7 @@ include '../../includes/sidebar.php';
                             <tr onclick="selectRecipientRow(this, 4)" class="recipient-row hover:bg-slate-50 transition cursor-pointer" data-id="4" data-channel="SMS" data-status="Failed">
                                 <td class="py-3.5 px-4">
                                     <p class="font-bold text-slate-900">Pedro Ramos</p>
-                                    <p class="text-[10px] text-slate-400">Purok 3, Sitio Pagkakaisa</p>
+                                    <p class="text-[10px] text-slate-400">Barangay 77, District 1</p>
                                 </td>
                                 <td class="py-3.5 px-3 font-semibold text-slate-800">0998 765 4321</td>
                                 <td class="py-3.5 px-3">
@@ -448,7 +448,7 @@ include '../../includes/sidebar.php';
                             <tr onclick="selectRecipientRow(this, 5)" class="recipient-row hover:bg-slate-50 transition cursor-pointer" data-id="5" data-channel="In-App" data-status="Pending">
                                 <td class="py-3.5 px-4">
                                     <p class="font-bold text-slate-900">Liza Gonzales</p>
-                                    <p class="text-[10px] text-slate-400">Purok 2, Sitio Maaliwalas</p>
+                                    <p class="text-[10px] text-slate-400">Barangay 188, District 3</p>
                                 </td>
                                 <td class="py-3.5 px-3 font-semibold text-slate-800">In-App User</td>
                                 <td class="py-3.5 px-3">
@@ -468,7 +468,7 @@ include '../../includes/sidebar.php';
                             <tr onclick="selectRecipientRow(this, 6)" class="recipient-row hover:bg-slate-50 transition cursor-pointer" data-id="6" data-channel="Email" data-status="Failed">
                                 <td class="py-3.5 px-4">
                                     <p class="font-bold text-slate-900">Roderick Lim</p>
-                                    <p class="text-[10px] text-slate-400">Purok 4, Sitio Pag-asa</p>
+                                    <p class="text-[10px] text-slate-400">Barangay 176, District 1</p>
                                 </td>
                                 <td class="py-3.5 px-3 font-semibold text-slate-800">roderick.lim@email.com</td>
                                 <td class="py-3.5 px-3">
@@ -488,7 +488,7 @@ include '../../includes/sidebar.php';
                             <tr onclick="selectRecipientRow(this, 7)" class="recipient-row hover:bg-slate-50 transition cursor-pointer" data-id="7" data-channel="SMS" data-status="Delivered">
                                 <td class="py-3.5 px-4">
                                     <p class="font-bold text-slate-900">Carla Dela Vega</p>
-                                    <p class="text-[10px] text-slate-400">Purok 1, Sitio Kalinawan</p>
+                                    <p class="text-[10px] text-slate-400">Barangay 1, District 1</p>
                                 </td>
                                 <td class="py-3.5 px-3 font-semibold text-slate-800">0916 111 2222</td>
                                 <td class="py-3.5 px-3">
@@ -544,7 +544,7 @@ include '../../includes/sidebar.php';
         </div>
 
         <!-- Right Side Panel: Recipient Details (4 Cols) -->
-        <div id="recipientDetailsDrawer" class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5 sticky top-6">
+        <div id="recipientDetailsDrawer" class="hidden lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5 sticky top-6">
             
             <!-- Drawer Header -->
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -561,7 +561,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div class="min-w-0">
                     <h3 id="drawerRecipientName" class="text-sm font-black text-slate-900 leading-tight truncate">Maria Santos</h3>
-                    <p id="drawerRecipientAddress" class="text-xs text-slate-400 font-medium truncate">Purok 1, Sitio Kalinawan</p>
+                    <p id="drawerRecipientAddress" class="text-xs text-slate-400 font-medium truncate">Barangay 178, District 3</p>
                 </div>
             </div>
 
@@ -675,10 +675,10 @@ include '../../includes/sidebar.php';
 </main>
 
 <script>
-const recipientsData = {
+const recipientData = {
     1: {
         name: 'Maria Santos',
-        address: 'Purok 1, Sitio Kalinawan',
+        address: 'Barangay 178, District 3',
         contact: '0917 123 4567',
         channel: 'SMS',
         status: 'Delivered',
@@ -687,7 +687,7 @@ const recipientsData = {
     },
     2: {
         name: 'Juan Dela Cruz',
-        address: 'Purok 2, Sitio Maaliwalas',
+        address: 'Barangay 12, District 2',
         contact: 'In-App User',
         channel: 'In-App / Push',
         status: 'Read',
@@ -696,7 +696,7 @@ const recipientsData = {
     },
     3: {
         name: 'Ana Reyes',
-        address: 'Purok 1, Sitio Kalinawan',
+        address: 'Barangay 1, District 1',
         contact: 'anareyes88@gmail.com',
         channel: 'Email',
         status: 'Delivered',
@@ -705,7 +705,7 @@ const recipientsData = {
     },
     4: {
         name: 'Pedro Ramos',
-        address: 'Purok 3, Sitio Pagkakaisa',
+        address: 'Barangay 77, District 1',
         contact: '0998 765 4321',
         channel: 'SMS',
         status: 'Failed',
@@ -714,7 +714,7 @@ const recipientsData = {
     },
     5: {
         name: 'Liza Gonzales',
-        address: 'Purok 2, Sitio Maaliwalas',
+        address: 'Barangay 188, District 3',
         contact: 'In-App User',
         channel: 'In-App / Push',
         status: 'Pending',
@@ -723,7 +723,7 @@ const recipientsData = {
     },
     6: {
         name: 'Roderick Lim',
-        address: 'Purok 4, Sitio Pag-asa',
+        address: 'Barangay 176, District 1',
         contact: 'roderick.lim@email.com',
         channel: 'Email',
         status: 'Failed',
@@ -732,7 +732,7 @@ const recipientsData = {
     },
     7: {
         name: 'Carla Dela Vega',
-        address: 'Purok 1, Sitio Kalinawan',
+        address: 'Barangay 1, District 1',
         contact: '0916 111 2222',
         channel: 'SMS',
         status: 'Delivered',
@@ -741,7 +741,18 @@ const recipientsData = {
     }
 };
 
+let activeRecipientId = null;
+
 function selectRecipientRow(rowElement, id) {
+    const drawer = document.getElementById('recipientDetailsDrawer');
+    const tableContainer = document.getElementById('tableContainer');
+
+    if (activeRecipientId === id && !drawer.classList.contains('hidden')) {
+        closeRecipientDrawer();
+        return;
+    }
+
+    activeRecipientId = id;
     document.querySelectorAll('.recipient-row').forEach(r => {
         r.classList.remove('bg-blue-50/40', 'bg-blue-50/60');
     });
@@ -760,13 +771,15 @@ function selectRecipientRow(rowElement, id) {
     statusSpan.innerText = data.status;
     statusSpan.className = `px-2.5 py-0.5 rounded-full font-bold text-[10px] border ${data.statusClass}`;
 
-    const drawer = document.getElementById('recipientDetailsDrawer');
-    const tableContainer = document.getElementById('tableContainer');
     drawer.classList.remove('hidden');
     tableContainer.className = "lg:col-span-8 space-y-4 transition-all duration-300";
 }
 
 function closeRecipientDrawer() {
+    activeRecipientId = null;
+    document.querySelectorAll('.recipient-row').forEach(r => {
+        r.classList.remove('bg-blue-50/40', 'bg-blue-50/60');
+    });
     const drawer = document.getElementById('recipientDetailsDrawer');
     const tableContainer = document.getElementById('tableContainer');
     drawer.classList.add('hidden');

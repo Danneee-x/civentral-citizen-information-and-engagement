@@ -34,7 +34,7 @@
         'data-changes.php'
       ];
 
-      $citizenRegistryPages = ['registered-citizens.php', 'pending-approvals.php', 'duplicate-flags.php'];
+      $citizenRegistryPages = ['registered-citizens.php', 'pending-approvals.php', 'id-verification-logs.php', 'duplicate-flags.php'];
       $feedbackGrievancePages = ['incoming-concerns.php', 'ai-analysis-results.php', 'concern-routing.php', 'resolved-concerns.php'];
       $certificateIssuancePages = ['certificate-requests.php', 'certificate-pending-approvals.php', 'issued-certificates.php', 'payment-records.php'];
       $publicConsultationPages = ['manage-surveys.php', 'live-results.php', 'participation-analytics.php', 'published-consultations.php'];
@@ -269,6 +269,7 @@
             <div id="citizenRegistryDropdown" class="<?php echo in_array($currentPage, $citizenRegistryPages) ? '' : 'hidden'; ?> pl-8 pr-2 space-y-0.5 font-medium sidebar-text">
               <a href="<?php echo $basePath ?? '../'; ?>pages/citizen-registry/registered-citizens.php" class="flex items-center space-x-2 px-3 py-2 text-[11px] rounded-md transition <?php echo $currentPage == 'registered-citizens.php' ? 'text-brand-medium font-black bg-white border border-brand-border/40 shadow-xs' : 'text-slate-500 hover:text-brand-dark'; ?>"><i class="fa-solid fa-id-card-clip text-[10px] <?php echo $currentPage == 'registered-citizens.php' ? 'text-brand-medium' : 'opacity-50'; ?>"></i> <span>Registered Citizens</span></a>
               <a href="<?php echo $basePath ?? '../'; ?>pages/citizen-registry/pending-approvals.php" class="flex items-center space-x-2 px-3 py-2 text-[11px] rounded-md transition <?php echo $currentPage == 'pending-approvals.php' ? 'text-brand-medium font-black bg-white border border-brand-border/40 shadow-xs' : 'text-slate-500 hover:text-brand-dark'; ?>"><i class="fa-solid fa-clock text-[10px] <?php echo $currentPage == 'pending-approvals.php' ? 'text-brand-medium' : 'opacity-50'; ?>"></i> <span>Pending Approvals</span></a>
+              <a href="<?php echo $basePath ?? '../'; ?>pages/citizen-registry/id-verification-logs.php" class="flex items-center space-x-2 px-3 py-2 text-[11px] rounded-md transition <?php echo $currentPage == 'id-verification-logs.php' ? 'text-brand-medium font-black bg-white border border-brand-border/40 shadow-xs' : 'text-slate-500 hover:text-brand-dark'; ?>"><i class="fa-solid fa-address-card text-[10px] <?php echo $currentPage == 'id-verification-logs.php' ? 'text-brand-medium' : 'opacity-50'; ?>"></i> <span>ID Verification Logs</span></a>
               <a href="<?php echo $basePath ?? '../'; ?>pages/citizen-registry/duplicate-flags.php" class="flex items-center space-x-2 px-3 py-2 text-[11px] rounded-md transition <?php echo $currentPage == 'duplicate-flags.php' ? 'text-brand-medium font-black bg-white border border-brand-border/40 shadow-xs' : 'text-slate-500 hover:text-brand-dark'; ?>"><i class="fa-solid fa-flag text-[10px] <?php echo $currentPage == 'duplicate-flags.php' ? 'text-brand-medium' : 'opacity-50'; ?>"></i> <span>Duplicate Flags</span></a>
             </div>
           </div>
@@ -307,7 +308,7 @@
             <button onclick="toggleDropdown('certificateDropdown', 'certificateChevron')" class="dropdown-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs tracking-wide transition group cursor-pointer <?php echo in_array($currentPage, $certificateIssuancePages) ? 'bg-white text-brand-dark border border-brand-border font-bold shadow-xs' : 'hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-brand-dark dark:hover:text-[#86B6F6] border border-transparent font-semibold'; ?>">
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-certificate text-sm <?php echo in_array($currentPage, $certificateIssuancePages) ? 'text-brand-medium' : 'text-slate-400'; ?> group-hover:text-brand-medium transition"></i>
-                    <span class="sidebar-text truncate">Certificate & ID Issuance</span>
+                    <span class="sidebar-text truncate">Barangay Certificate & ID Issuance</span>
               </div>
                 <div class="dropdown-right">
                     <i id="certificateChevron"

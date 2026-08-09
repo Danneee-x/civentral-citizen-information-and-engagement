@@ -115,7 +115,7 @@ include '../../includes/sidebar.php';
                             </div>
 
                             <!-- Contenteditable Editor Container -->
-                            <div id="alertBodyInput" contenteditable="true" oninput="updateCharCount()" onkeyup="updateCharCount(); updateToolbarActiveState()" onmouseup="updateToolbarActiveState()" placeholder="Type your message here..." class="w-full p-3.5 text-xs text-slate-800 font-medium outline-none min-h-[140px] border-0 overflow-y-auto"></div>
+                            <div id="alertBodyInput" contenteditable="true" oninput="updateCharCount(); updateToolbarActiveState()" onkeyup="updateCharCount(); updateToolbarActiveState()" onmouseup="updateToolbarActiveState()" placeholder="Type your message here..." class="w-full p-3.5 text-xs text-slate-800 font-medium outline-none min-h-[140px] border-0 overflow-y-auto"></div>
                             
                             <div class="px-3 py-1.5 bg-slate-50 border-t border-slate-100 text-right text-[10px] font-bold text-slate-400">
                                 <span id="charCounter">0</span> / 1000 characters
@@ -301,7 +301,7 @@ include '../../includes/sidebar.php';
                     <!-- Category 3: Event -->
                     <div onclick="selectCategory('Event', this)" class="category-card cursor-pointer border-2 border-slate-200 hover:border-slate-300 bg-white rounded-2xl p-3 text-center transition flex flex-col items-center justify-between relative min-h-[90px] select-none">
                         <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-sm mb-1">
-                            <i class="fa-solid fa-calendar-star"></i>
+                            <i class="fa-solid fa-calendar-days"></i>
                         </div>
                         <span class="text-[11px] font-bold text-purple-600 leading-tight">Event</span>
                     </div>
@@ -437,8 +437,8 @@ include '../../includes/sidebar.php';
             <div class="flex items-center gap-4 flex-wrap text-xs font-bold text-slate-800">
                 <!-- Category Chip -->
                 <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center text-xs">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div id="summaryCategoryIconContainer" class="w-6 h-6 rounded-lg bg-blue-50 text-[#0f53d1] flex items-center justify-center text-xs">
+                        <i id="summaryCategoryIcon" class="fa-solid fa-bullhorn"></i>
                     </div>
                     <div>
                         <span class="text-[9px] text-slate-400 font-bold uppercase block leading-none">Category</span>
@@ -534,7 +534,7 @@ include '../../includes/sidebar.php';
 
                 <!-- Category -->
                 <div class="space-y-1">
-                    <span class="text-xs text-slate-400 font-medium flex items-center gap-1.5"><i class="fa-solid fa-bullhorn text-[#0f53d1]"></i> Category</span>
+                    <span class="text-xs text-slate-400 font-medium flex items-center gap-1.5"><i id="modalSummaryCategoryIcon" class="fa-solid fa-bullhorn text-[#0f53d1]"></i> Category</span>
                     <p id="modalSummaryCategory" class="text-xs font-bold text-slate-900">General Announcement</p>
                 </div>
 
@@ -600,7 +600,7 @@ include '../../includes/sidebar.php';
                 <div id="contentInApp" class="border border-slate-200 rounded-2xl p-4 space-y-3 bg-white shadow-xs">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
                         <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-bullhorn text-[#0f53d1] text-xs"></i>
+                            <i id="previewModalCategoryIcon" class="fa-solid fa-bullhorn text-[#0f53d1] text-xs"></i>
                             <span id="previewModalCategoryBadge" class="text-xs font-bold text-[#0f53d1]">General Announcement</span>
                         </div>
                         <span class="text-[10px] text-slate-400 font-medium">Just now</span>
@@ -672,6 +672,77 @@ include '../../includes/sidebar.php';
 
 <script>
 let selectedCategory = 'General Announcement';
+
+const categoryDetailsMap = {
+    'Emergency': { icon: 'fa-triangle-exclamation', colorClass: 'text-rose-500', bgClass: 'bg-rose-50' },
+    'Health Advisory': { icon: 'fa-heart-pulse', colorClass: 'text-amber-500', bgClass: 'bg-amber-50' },
+    'Event': { icon: 'fa-calendar-days', colorClass: 'text-purple-600', bgClass: 'bg-purple-50' },
+    'General Announcement': { icon: 'fa-bullhorn', colorClass: 'text-[#0f53d1]', bgClass: 'bg-blue-50' },
+    'Curfew / Ordinance Notice': { icon: 'fa-shield-halved', colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50' }
+};
+
+function updatePreviewSummary() {
+    // 1. Category
+    const summaryCatText = document.getElementById('summaryCategory');
+    const summaryCatIconContainer = document.getElementById('summaryCategoryIconContainer');
+    const summaryCatIcon = document.getElementById('summaryCategoryIcon');
+    
+    const catConfig = categoryDetailsMap[selectedCategory] || categoryDetailsMap['General Announcement'];
+    
+    if (summaryCatText) summaryCatText.innerText = selectedCategory;
+    if (summaryCatIconContainer) {
+        summaryCatIconContainer.className = `w-6 h-6 rounded-lg ${catConfig.bgClass} ${catConfig.colorClass} flex items-center justify-center text-xs`;
+    }
+    if (summaryCatIcon) {
+        summaryCatIcon.className = `fa-solid ${catConfig.icon}`;
+    }
+
+    // 2. Recipients
+    const recipientRadio = document.querySelector('input[name="targetRecipient"]:checked');
+    const summaryRecipText = document.getElementById('summaryRecipients');
+    if (summaryRecipText && recipientRadio) {
+        const val = recipientRadio.value;
+        if (val === 'All Residents') {
+            summaryRecipText.innerText = 'All Residents';
+        } else if (val === 'Specific District') {
+            const dist = document.getElementById('districtSelect').value;
+            const brgy = document.getElementById('barangaySelect').value;
+            if (brgy) {
+                summaryRecipText.innerText = `${brgy} (${dist || 'District'})`;
+            } else if (dist) {
+                summaryRecipText.innerText = `All in ${dist}`;
+            } else {
+                summaryRecipText.innerText = 'Specific District';
+            }
+        } else if (val === 'Specific Group') {
+            const grp = document.getElementById('groupSelect').value;
+            summaryRecipText.innerText = grp ? grp : 'Specific Group';
+        }
+    }
+
+    // 3. Channels
+    const channels = [];
+    if (document.getElementById('channelSms')?.checked) channels.push('SMS');
+    if (document.getElementById('channelPush')?.checked) channels.push('In-App');
+    if (document.getElementById('channelEmail')?.checked) channels.push('Email');
+    const summaryChannelsText = document.getElementById('summaryChannels');
+    if (summaryChannelsText) {
+        summaryChannelsText.innerText = channels.length > 0 ? channels.join(', ') : 'None selected';
+    }
+
+    // 4. Schedule
+    const schedRadio = document.querySelector('input[name="scheduleSend"]:checked');
+    const summarySchedText = document.getElementById('summarySchedule');
+    if (summarySchedText && schedRadio) {
+        if (schedRadio.value === 'Send Immediately') {
+            summarySchedText.innerText = 'Send Immediately';
+        } else {
+            const dateVal = document.getElementById('scheduleDateInput').value;
+            const timeVal = document.getElementById('scheduleTimeInput').value;
+            summarySchedText.innerText = dateVal && timeVal ? `${dateVal} ${timeVal}` : 'Scheduled';
+        }
+    }
+}
 
 function selectCategory(categoryName, element) {
     selectedCategory = categoryName;
@@ -794,6 +865,71 @@ function updateCharCount() {
     validateFormInputs();
 }
 
+function formatText(command, value = null) {
+    const editor = document.getElementById('alertBodyInput');
+    if (editor) editor.focus();
+    document.execCommand(command, false, value);
+    updateToolbarActiveState();
+    updateCharCount();
+}
+
+function formatHeading(val) {
+    const editor = document.getElementById('alertBodyInput');
+    if (editor) editor.focus();
+    if (val === 'Heading 1') {
+        document.execCommand('formatBlock', false, '<h1>');
+    } else if (val === 'Heading 2') {
+        document.execCommand('formatBlock', false, '<h2>');
+    } else {
+        document.execCommand('formatBlock', false, '<p>');
+    }
+    updateToolbarActiveState();
+    updateCharCount();
+}
+
+function formatLink() {
+    const editor = document.getElementById('alertBodyInput');
+    if (editor) editor.focus();
+    const url = prompt('Enter link URL (e.g. https://example.gov.ph):', 'https://');
+    if (url && url !== 'https://') {
+        document.execCommand('createLink', false, url);
+    }
+    updateToolbarActiveState();
+    updateCharCount();
+}
+
+function updateToolbarActiveState() {
+    const btnBold = document.getElementById('btnBold');
+    const btnItalic = document.getElementById('btnItalic');
+    const btnUnderline = document.getElementById('btnUnderline');
+    const btnBulletList = document.getElementById('btnBulletList');
+    const btnNumberedList = document.getElementById('btnNumberedList');
+    const btnAlignLeft = document.getElementById('btnAlignLeft');
+    const btnAlignCenter = document.getElementById('btnAlignCenter');
+
+    const toggleBtnState = (btn, command) => {
+        if (!btn) return;
+        try {
+            const isActive = document.queryCommandState(command);
+            if (isActive) {
+                btn.classList.add('bg-blue-100', 'text-[#0f53d1]', 'border', 'border-[#0f53d1]/40', 'font-black');
+                btn.classList.remove('text-slate-600', 'hover:bg-slate-200');
+            } else {
+                btn.classList.remove('bg-blue-100', 'text-[#0f53d1]', 'border', 'border-[#0f53d1]/40', 'font-black');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-200');
+            }
+        } catch (e) {}
+    };
+
+    toggleBtnState(btnBold, 'bold');
+    toggleBtnState(btnItalic, 'italic');
+    toggleBtnState(btnUnderline, 'underline');
+    toggleBtnState(btnBulletList, 'insertUnorderedList');
+    toggleBtnState(btnNumberedList, 'insertOrderedList');
+    toggleBtnState(btnAlignLeft, 'justifyLeft');
+    toggleBtnState(btnAlignCenter, 'justifyCenter');
+}
+
 let uploadedFileObject = null;
 let uploadedImageDataUrl = null;
 
@@ -892,7 +1028,23 @@ function reviewAndSendAlert() {
     // Populate modal summary fields
     document.getElementById('modalSummaryTitle').innerText = title;
     document.getElementById('modalSummaryCategory').innerText = selectedCategory;
-    document.getElementById('previewModalCategoryBadge').innerText = selectedCategory;
+    
+    const catConfig = categoryDetailsMap[selectedCategory] || categoryDetailsMap['General Announcement'];
+    
+    const modalCatIcon = document.getElementById('modalSummaryCategoryIcon');
+    if (modalCatIcon) modalCatIcon.className = `fa-solid ${catConfig.icon} ${catConfig.colorClass}`;
+
+    const previewModalCatBadge = document.getElementById('previewModalCategoryBadge');
+    if (previewModalCatBadge) {
+        previewModalCatBadge.innerText = selectedCategory;
+        previewModalCatBadge.className = `text-xs font-bold ${catConfig.colorClass}`;
+    }
+
+    const previewModalCatIcon = document.getElementById('previewModalCategoryIcon');
+    if (previewModalCatIcon) {
+        previewModalCatIcon.className = `fa-solid ${catConfig.icon} ${catConfig.colorClass} text-xs`;
+    }
+
     document.getElementById('modalSummaryRecipients').innerText = document.getElementById('summaryRecipients').innerText;
 
     // Delivery channels summary in modal

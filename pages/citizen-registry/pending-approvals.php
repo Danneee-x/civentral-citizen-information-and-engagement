@@ -300,20 +300,26 @@ include '../../includes/sidebar.php';
             <!-- Filter Card -->
             <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <!-- Top Search & Toggle -->
-                <div class="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center mb-5">
-                    <div class="relative w-full max-w-xl">
-                        <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                        <input type="text" placeholder="Search by Applicant Name, Application ID, Household ID..." class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl focus:ring-2 focus:ring-[#0f53d1]/40 focus:border-[#0f53d1] block pl-10 pr-4 py-2.5 outline-none font-medium placeholder-slate-400">
+                <div id="filterSearchRow" class="flex flex-col md:flex-row gap-3 justify-between items-start md:items-center">
+                    <div class="flex-1 w-full flex items-center gap-2">
+                        <div class="relative w-full">
+                            <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                            <input type="text" placeholder="Search by Applicant Name, Application ID, Household ID..." class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl focus:ring-2 focus:ring-[#0f53d1]/40 focus:border-[#0f53d1] block pl-10 pr-4 py-2.5 outline-none font-medium placeholder-slate-400">
+                        </div>
+                        <button id="searchBtnPending" class="shrink-0 px-4 py-2.5 text-xs font-bold text-white bg-[#0f53d1] hover:bg-[#0d46b0] rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-search text-[10px]"></i>
+                            <span>Search</span>
+                        </button>
                     </div>
-                    <button class="shrink-0 flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-700 bg-slate-100/70 hover:bg-slate-200/70 rounded-xl transition cursor-pointer">
+                    <button id="toggleFilterBtn" onclick="togglePendingFilterGrid()" class="shrink-0 flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold text-slate-700 bg-slate-100/70 hover:bg-slate-200/70 rounded-xl transition cursor-pointer">
                         <i class="fa-solid fa-sliders text-xs"></i>
-                        <span>Hide Filters</span>
-                        <i class="fa-solid fa-chevron-up text-[9px] ml-0.5"></i>
+                        <span id="toggleFilterBtnText">Show Filters</span>
+                        <i id="toggleFilterBtnChevron" class="fa-solid fa-chevron-down text-[9px] ml-0.5"></i>
                     </button>
                 </div>
 
-                <!-- Filters Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Filters Grid (Hidden by Default) -->
+                <div id="filterGrid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
                     <div class="space-y-1">
                         <label class="text-[10px] font-bold text-slate-500 uppercase">Submission Date</label>
                         <div class="relative">
@@ -367,12 +373,8 @@ include '../../includes/sidebar.php';
                         </select>
                     </div>
 
-                    <div class="flex items-end gap-2">
-                        <button id="searchBtnPending" class="flex-1 py-2.5 text-xs font-bold text-white bg-[#0f53d1] hover:bg-[#0d46b0] rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
-                            <i class="fa-solid fa-search text-[10px]"></i>
-                            <span>Search</span>
-                        </button>
-                        <button id="clearFiltersBtnPending" class="px-4 py-2.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition cursor-pointer">
+                    <div class="flex items-end justify-end">
+                        <button id="clearFiltersBtnPending" class="w-full py-2.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition cursor-pointer">
                             Clear Filters
                         </button>
                     </div>
@@ -404,9 +406,6 @@ include '../../includes/sidebar.php';
                     <table class="w-full text-left border-collapse whitespace-nowrap min-w-[950px]">
                         <thead>
                             <tr class="border-b border-slate-100 bg-slate-50/50">
-                                <th class="p-3.5 w-10 text-center">
-                                    <input type="checkbox" class="w-4 h-4 text-[#0f53d1] bg-slate-100 border-slate-300 rounded" checked>
-                                </th>
                                 <th class="p-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Application ID <i class="fa-solid fa-arrows-up-down text-[8px] opacity-60"></i></th>
                                 <th class="p-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Applicant Name</th>
                                 <th class="p-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Submission Date <i class="fa-solid fa-arrow-down text-[8px] opacity-60"></i></th>
@@ -421,10 +420,7 @@ include '../../includes/sidebar.php';
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             <?php foreach ($applications as $app): ?>
-                            <tr class="hover:bg-slate-50/80 transition <?php echo $app['selected'] ? 'bg-blue-50/30' : ''; ?>" data-district="<?php echo htmlspecialchars($app['district']); ?>">
-                                <td class="p-3.5 text-center">
-                                    <input type="checkbox" class="w-4 h-4 text-[#0f53d1] bg-slate-100 border-slate-300 rounded" <?php echo $app['selected'] ? 'checked' : ''; ?>>
-                                </td>
+                            <tr onclick="selectPendingApplication(this, '<?php echo $app['id']; ?>', '<?php echo htmlspecialchars(addslashes($app['applicant'])); ?>', '<?php echo htmlspecialchars($app['status']); ?>')" class="pending-app-row hover:bg-slate-50/80 transition cursor-pointer" data-district="<?php echo htmlspecialchars($app['district']); ?>">
                                 <td class="p-3.5 text-xs font-bold text-slate-700"><?php echo $app['id']; ?></td>
                                 <td class="p-3.5">
                                     <div class="flex items-center gap-2.5">
@@ -508,15 +504,15 @@ include '../../includes/sidebar.php';
         </div>
 
         <!-- Right Column: Detail Inspector Drawer Panel -->
-        <div class="w-full xl:w-[420px] bg-white rounded-2xl border border-slate-200 shadow-md p-5 shrink-0 flex flex-col gap-5">
+        <div id="pendingDetailDrawer" class="hidden w-full xl:w-[420px] bg-white rounded-2xl border border-slate-200 shadow-md p-5 shrink-0 flex-col gap-5">
             
             <!-- Drawer Header -->
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2">
-                    <h2 class="text-base font-black text-slate-900 tracking-tight">APP-2025-0421</h2>
-                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-50 text-amber-600 border border-amber-200/80">Pending</span>
+                    <h2 id="drawerAppId" class="text-base font-black text-slate-900 tracking-tight">APP-2025-0421</h2>
+                    <span id="drawerAppStatus" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-amber-50 text-amber-600 border border-amber-200/80">Pending</span>
                 </div>
-                <button class="text-slate-400 hover:text-slate-700 transition cursor-pointer p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+                <button onclick="closePendingDrawer()" class="text-slate-400 hover:text-slate-700 transition cursor-pointer p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
             </div>
 
             <!-- Drawer Tabs -->
@@ -538,7 +534,7 @@ include '../../includes/sidebar.php';
                 <div class="grid grid-cols-2 gap-y-2.5 gap-x-4 text-xs">
                     <div>
                         <span class="text-slate-400 block text-[10px] font-semibold">Full Name</span>
-                        <span class="font-bold text-slate-800">Juan Dela Cruz</span>
+                        <span id="drawerApplicantName" class="font-bold text-slate-800">Juan Dela Cruz</span>
                     </div>
                     <div>
                         <span class="text-slate-400 block text-[10px] font-semibold">Birthdate</span>
@@ -746,6 +742,68 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+function togglePendingFilterGrid() {
+    const filterGrid = document.getElementById('filterGrid');
+    const filterSearchRow = document.getElementById('filterSearchRow');
+    const btnText = document.getElementById('toggleFilterBtnText');
+    const btnChevron = document.getElementById('toggleFilterBtnChevron');
+
+    if (!filterGrid) return;
+
+    if (filterGrid.classList.contains('hidden')) {
+        filterGrid.classList.remove('hidden');
+        if (filterSearchRow) filterSearchRow.classList.add('mb-5');
+        if (btnText) btnText.textContent = 'Hide Filters';
+        if (btnChevron) btnChevron.className = 'fa-solid fa-chevron-up text-[9px] ml-0.5';
+    } else {
+        filterGrid.classList.add('hidden');
+        if (filterSearchRow) filterSearchRow.classList.remove('mb-5');
+        if (btnText) btnText.textContent = 'Show Filters';
+        if (btnChevron) btnChevron.className = 'fa-solid fa-chevron-down text-[9px] ml-0.5';
+    }
+}
+
+let activeAppId = null;
+
+function selectPendingApplication(rowElement, appId, applicantName, status) {
+    const drawer = document.getElementById('pendingDetailDrawer');
+    if (!drawer) return;
+
+    if (activeAppId === appId && !drawer.classList.contains('hidden')) {
+        closePendingDrawer();
+        return;
+    }
+
+    activeAppId = appId;
+    document.querySelectorAll('.pending-app-row').forEach(r => {
+        r.classList.remove('bg-blue-50/40', 'bg-blue-50/30');
+    });
+    rowElement.classList.add('bg-blue-50/40');
+
+    const drawerId = document.getElementById('drawerAppId');
+    const drawerName = document.getElementById('drawerApplicantName');
+    const drawerStatus = document.getElementById('drawerAppStatus');
+
+    if (drawerId) drawerId.textContent = appId;
+    if (drawerName) drawerName.textContent = applicantName;
+    if (drawerStatus) drawerStatus.textContent = status;
+
+    drawer.classList.remove('hidden');
+    drawer.classList.add('flex');
+}
+
+function closePendingDrawer() {
+    activeAppId = null;
+    document.querySelectorAll('.pending-app-row').forEach(r => {
+        r.classList.remove('bg-blue-50/40', 'bg-blue-50/30');
+    });
+    const drawer = document.getElementById('pendingDetailDrawer');
+    if (drawer) {
+        drawer.classList.add('hidden');
+        drawer.classList.remove('flex');
+    }
+}
 </script>
 
 <?php include '../../includes/footer.php'; ?>
