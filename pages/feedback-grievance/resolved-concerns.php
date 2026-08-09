@@ -75,8 +75,7 @@ $resolvedConcerns = [
                 <i class="fa-solid fa-circle-check"></i>
             </div>
             <div>
-                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">3.4 Resolved Concerns</h1>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Archive, Accountability Metrics, Resolution Turnaround & Citizen Satisfaction Scores</p>
+                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Resolved Concerns</h1>
             </div>
         </div>
 

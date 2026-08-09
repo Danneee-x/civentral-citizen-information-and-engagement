@@ -71,7 +71,6 @@ $nonResponders = [
             </div>
             <div>
                 <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Participation Analytics</h1>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Turnout Rates, Demographic Breakdowns, Multi-Survey Trends & Non-Response Tracking</p>
             </div>
         </div>
 
@@ -83,7 +82,7 @@ $nonResponders = [
 
             <button onclick="sendBulkRemindersModal()" class="px-4.5 py-2.5 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer">
                 <i class="fa-solid fa-bell text-xs"></i>
-                <span>+ Broadcast Follow-Up Reminder</span>
+                <span>Broadcast Follow-Up Reminder</span>
             </button>
         </div>
     </div>

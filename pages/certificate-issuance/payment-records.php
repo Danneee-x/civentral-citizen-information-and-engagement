@@ -103,8 +103,7 @@ $payments = [
                 <i class="fa-solid fa-receipt"></i>
             </div>
             <div>
-                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Payment Records</h1>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Barangay Revenue Summary, Configurable Fee Schedule & Treasurer Reconciliation</p>
+                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Payment Records & Revenue Summary</h1>
             </div>
         </div>
 

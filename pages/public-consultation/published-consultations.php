@@ -67,7 +67,6 @@ $publishedConsultations = [
             </div>
             <div>
                 <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Published Consultations</h1>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Public Transparency Archive, Policy Outcomes & Downloadable Executive Summary Reports</p>
             </div>
         </div>
 
@@ -121,13 +120,13 @@ $publishedConsultations = [
             <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Ordinances Enacted</span>
                 <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base border border-emerald-100">
-                    <i class="fa-solid fa-[#0f53d1]"></i>
+                    <i class="fa-solid fa-gavel"></i>
                 </div>
             </div>
             <div>
                 <h3 class="text-2xl font-black text-slate-900 tracking-tight">8 Ordinances</h3>
                 <p class="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
-                    <i class="fa-solid fa-[#0f53d1]"></i>
+                    <i class="fa-solid fa-check"></i>
                     <span>Informed by survey findings</span>
                 </p>
             </div>
@@ -195,7 +194,7 @@ $publishedConsultations = [
                     <!-- Barangay Policy Outcome Box -->
                     <div class="p-4 bg-purple-50/60 border border-purple-100 rounded-xl space-y-1.5">
                         <span class="text-[10px] font-bold text-purple-700 uppercase tracking-wider flex items-center gap-1.5">
-                            <i class="fa-solid fa-[#0f53d1] text-purple-600"></i>
+                            <i class="fa-solid fa-landmark text-purple-600"></i>
                             <span>Barangay Policy / Action Taken</span>
                         </span>
                         <p class="text-purple-900 font-bold text-xs leading-relaxed"><?php echo htmlspecialchars($pub['barangay_policy_outcome']); ?></p>

@@ -149,17 +149,8 @@ include '../../includes/sidebar.php';
 
 <main class="flex-1 p-4 md:p-6 lg:p-8 w-full overflow-y-auto bg-slate-50/50 min-h-[calc(100vh-4rem)]">
 
-    <!-- Top Bar Breadcrumb & Quick Actions -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-            <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
-                <span>Dashboard</span>
-                <i class="fa-solid fa-chevron-right text-[9px] text-slate-400"></i>
-                <span>Citizen Registry</span>
-                <i class="fa-solid fa-chevron-right text-[9px] text-slate-400"></i>
-                <span class="text-[#0f53d1] font-bold">Pending Approvals</span>
-            </div>
-        </div>
+    <!-- Top Bar Quick Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-end gap-4 mb-6">
         <div class="flex items-center gap-2 flex-wrap">
             <button class="px-3.5 py-2 text-xs font-bold text-[#0f53d1] bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 shadow-xs">
                 <i class="fa-solid fa-rotate text-[11px]"></i>

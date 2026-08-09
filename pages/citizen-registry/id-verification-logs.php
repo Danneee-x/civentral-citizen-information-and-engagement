@@ -81,13 +81,7 @@ $verificationLogs = [
                 <i class="fa-solid fa-address-card"></i>
             </div>
             <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">ID Verification Logs</h1>
-                    <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-blue-50 text-[#0f53d1] border border-blue-200 flex items-center gap-1">
-                        <i class="fa-solid fa-lock text-[8px]"></i> Immutable Audit Log
-                    </span>
-                </div>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Read-only historical audit trail verifying data integrity & staff identity checks</p>
+                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">ID Verification Audit Logs</h1>
             </div>
         </div>
 

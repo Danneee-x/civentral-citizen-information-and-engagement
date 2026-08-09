@@ -113,8 +113,7 @@ $concerns = [
                 <i class="fa-solid fa-inbox"></i>
             </div>
             <div>
-                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">3.1 Incoming Concerns</h1>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Citizen Feedback, Grievance Reports & Anonymous Ticket Management</p>
+                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Incoming Concerns</h1>
             </div>
         </div>
 
@@ -126,7 +125,7 @@ $concerns = [
 
             <button onclick="openSubmitConcernModal()" class="px-4.5 py-2.5 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer">
                 <i class="fa-solid fa-plus text-xs"></i>
-                <span>+ Submit New Concern</span>
+                <span>Submit New Concern</span>
             </button>
         </div>
     </div>

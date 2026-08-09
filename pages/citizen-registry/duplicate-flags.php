@@ -83,8 +83,7 @@ $duplicateFlags = [
                 <i class="fa-solid fa-copy"></i>
             </div>
             <div>
-                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">2.4 Duplicate Flags</h1>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Auto-detected duplicate resident records, side-by-side comparison & merge controls</p>
+                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Duplicate Flags</h1>
             </div>
         </div>
 

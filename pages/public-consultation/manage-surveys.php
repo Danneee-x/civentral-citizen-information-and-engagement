@@ -175,7 +175,6 @@ $surveys = [
                 </div>
                 <div>
                     <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Manage Surveys</h1>
-                    <p class="text-xs text-slate-500 font-medium mt-0.5">Survey Builder, Target Demographics, Auto-close Deadlines & Response Controls</p>
                 </div>
             </div>
         </div>
@@ -188,7 +187,7 @@ $surveys = [
 
             <button onclick="openCreateSurveyModal()" class="px-4.5 py-2.5 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer">
                 <i class="fa-solid fa-plus text-xs"></i>
-                <span>+ Survey Builder</span>
+                <span>Survey Builder</span>
             </button>
         </div>
     </div>

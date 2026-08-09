@@ -86,7 +86,6 @@ $pendingApprovals = [
             </div>
             <div>
                 <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Pending Approvals</h1>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Approval Queue for Barangay Captain & Authorized Approving Officials</p>
             </div>
         </div>
 

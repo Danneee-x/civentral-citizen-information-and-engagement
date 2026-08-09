@@ -100,8 +100,7 @@ $issuedCertificates = [
                 <i class="fa-solid fa-stamp"></i>
             </div>
             <div>
-                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Issued Certificates</h1>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Audit log of released certificates, official PDF print layout & reprint tracking</p>
+                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Issued Certificates & Clearance History</h1>
             </div>
         </div>
 

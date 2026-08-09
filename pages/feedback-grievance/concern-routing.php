@@ -130,11 +130,10 @@ $kanbanColumns = [
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#0f53d1] flex items-center justify-center text-lg border border-blue-100 shadow-xs">
-                <i class="fa-solid fa-[#0f53d1]"></i>
+                <i class="fa-solid fa-route"></i>
             </div>
             <div>
-                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">3.3 Concern Routing & Dispatch Board</h1>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Kanban Committee Workflow: Unassigned ➔ Dispatched ➔ In-Field Inspection ➔ Resolution Verification</p>
+                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Concern Routing & Dispatch Board</h1>
             </div>
         </div>
 

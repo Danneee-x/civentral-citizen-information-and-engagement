@@ -90,8 +90,7 @@ $aiClassifications = [
                 <i class="fa-solid fa-brain"></i>
             </div>
             <div>
-                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">3.2 AI Analysis Results</h1>
-                <p class="text-xs text-slate-500 font-medium mt-0.5">Automated NLP Categorization, Sentiment Scoring & Duplicate Ticket Clustering Engine</p>
+                <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">AI Analysis Results</h1>
             </div>
         </div>
 
@@ -132,13 +131,13 @@ $aiClassifications = [
             <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Duplicate Clusters</span>
                 <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-base border border-purple-100">
-                    <i class="fa-solid fa-[#0f53d1]"></i>
+                    <i class="fa-solid fa-object-group"></i>
                 </div>
             </div>
             <div>
                 <h3 class="text-2xl font-black text-slate-900 tracking-tight">14 Clusters</h3>
                 <p class="text-[11px] font-semibold text-purple-600 flex items-center gap-1 mt-1">
-                    <i class="fa-solid fa-[#0f53d1]"></i>
+                    <i class="fa-solid fa-layer-group"></i>
                     <span>42 similar tickets merged</span>
                 </p>
             </div>

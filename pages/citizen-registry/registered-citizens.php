@@ -195,10 +195,10 @@ include '../../includes/sidebar.php';
     </div>
 
     <!-- Main Layout -->
-    <div class="flex flex-col xl:flex-row gap-6">
+    <div class="flex flex-col gap-6 w-full">
         
-        <!-- Left / Main Column -->
-        <div class="flex-1 flex flex-col gap-6 min-w-0">
+        <!-- Main Table Section -->
+        <div class="w-full flex flex-col gap-6 min-w-0">
             
             <!-- Filters Section -->
             <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -423,7 +423,33 @@ include '../../includes/sidebar.php';
                             <option value="25">25</option>
                             <option value="50">50</option>
                         </select>
-                        <span id="showingEntriesText" class="text-xs text-slate-500 font-medium ml-2">Showing 1 to 10 of 15 entries</span>
+                        <span id="showingEntriesText" class="text-xs text-slate-500 font-medium ml-1 mr-2">Showing 1 to 10 of 15 entries</span>
+
+                        <!-- Vertical Divider -->
+                        <div class="h-5 w-px bg-slate-200 hidden sm:block"></div>
+
+                        <!-- View Toggles Beside Showing Entries -->
+                        <div class="flex items-center gap-2">
+                            <button id="tableViewBtn" onclick="switchViewMode('table')" class="flex items-center gap-2.5 px-3.5 py-2 rounded-xl border-2 border-[#0f53d1]/30 bg-blue-50/50 shadow-xs cursor-pointer hover:bg-blue-50 transition group">
+                                <div class="w-6 h-6 rounded-md bg-white flex items-center justify-center border border-[#0f53d1]/20 text-[#0f53d1] text-xs transition-transform group-hover:scale-105">
+                                    <i class="fa-solid fa-table-cells"></i>
+                                </div>
+                                <div class="text-left">
+                                    <h4 class="text-xs font-bold text-[#0f53d1] leading-tight">Table View</h4>
+                                    <p class="text-[9px] text-slate-500 font-medium hidden sm:block">Detailed table format</p>
+                                </div>
+                            </button>
+
+                            <button id="householdViewBtn" onclick="switchViewMode('household')" class="flex items-center gap-2.5 px-3.5 py-2 rounded-xl border-2 border-transparent bg-slate-50 shadow-xs cursor-pointer hover:border-slate-200 transition group">
+                                <div class="w-6 h-6 rounded-md bg-white flex items-center justify-center border border-slate-200 text-slate-400 text-xs transition-transform group-hover:scale-105 group-hover:text-slate-600">
+                                    <i class="fa-solid fa-house-chimney"></i>
+                                </div>
+                                <div class="text-left">
+                                    <h4 class="text-xs font-bold text-slate-700 leading-tight">Household View</h4>
+                                    <p class="text-[9px] text-slate-500 font-medium hidden sm:block">Grouped by household</p>
+                                </div>
+                            </button>
+                        </div>
                     </div>
 
                     <div id="paginationButtonsContainer" class="flex items-center gap-1 flex-wrap">
@@ -433,104 +459,85 @@ include '../../includes/sidebar.php';
 
             </div>
 
-            <!-- Bottom View Toggles -->
-            <div class="flex items-center gap-4 mt-2">
-                <button id="tableViewBtn" onclick="switchViewMode('table')" class="flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-[#0f53d1]/30 bg-blue-50/50 shadow-sm cursor-pointer hover:bg-blue-50 transition group w-full md:w-auto">
-                    <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-[#0f53d1]/20 text-[#0f53d1] group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-table-cells"></i>
-                    </div>
-                    <div class="text-left">
-                        <h4 class="text-xs font-bold text-[#0f53d1]">Table View</h4>
-                        <p class="text-[10px] text-slate-500 font-medium">View citizens in a detailed table format</p>
-                    </div>
-                </button>
-
-                <button id="householdViewBtn" onclick="switchViewMode('household')" class="flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-transparent bg-white shadow-sm cursor-pointer hover:border-slate-200 transition group w-full md:w-auto">
-                    <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-400 group-hover:scale-110 transition-transform group-hover:text-slate-600">
-                        <i class="fa-solid fa-house-chimney"></i>
-                    </div>
-                    <div class="text-left">
-                        <h4 class="text-xs font-bold text-slate-700">Household View</h4>
-                        <p class="text-[10px] text-slate-500 font-medium">View citizens grouped by household ID</p>
-                    </div>
-                </button>
-            </div>
-
         </div>
 
-        <!-- Right Sidebar Widgets Column -->
-        <div class="w-full xl:w-80 flex flex-col gap-6 shrink-0">
+        <!-- Bottom Widgets Section (3 cards at bottom of table) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             <!-- Recent Activities -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Recent Activities</h3>
-                    <a href="#" class="text-[10px] font-bold text-[#0f53d1] hover:underline">View All</a>
-                </div>
-                
-                <div class="space-y-4">
-                    <div class="flex gap-3">
-                        <div class="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-user-plus text-[10px] text-blue-500"></i></div>
-                        <div>
-                            <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">Maria Santos</span> registered a new citizen</p>
-                            <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">2 mins ago</p>
-                        </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Recent Activities</h3>
+                        <a href="#" class="text-[10px] font-bold text-[#0f53d1] hover:underline">View All</a>
                     </div>
-                    <div class="flex gap-3">
-                        <div class="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-pen text-[10px] text-emerald-500"></i></div>
-                        <div>
-                            <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">Juan Dela Cruz</span> updated a citizen profile</p>
-                            <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">15 mins ago</p>
+                    
+                    <div class="space-y-4">
+                        <div class="flex gap-3">
+                            <div class="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-user-plus text-[10px] text-blue-500"></i></div>
+                            <div>
+                                <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">Maria Santos</span> registered a new citizen</p>
+                                <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">2 mins ago</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex gap-3">
-                        <div class="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-shield-halved text-[10px] text-amber-500"></i></div>
-                        <div>
-                            <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">Pedro Reyes</span> marked a citizen for validation</p>
-                            <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">1 hour ago</p>
+                        <div class="flex gap-3">
+                            <div class="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-pen text-[10px] text-emerald-500"></i></div>
+                            <div>
+                                <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">Juan Dela Cruz</span> updated a citizen profile</p>
+                                <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">15 mins ago</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex gap-3">
-                        <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-download text-[10px] text-slate-500"></i></div>
-                        <div>
-                            <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">System</span> exported 200 records</p>
-                            <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">2 hours ago</p>
+                        <div class="flex gap-3">
+                            <div class="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-shield-halved text-[10px] text-amber-500"></i></div>
+                            <div>
+                                <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">Pedro Reyes</span> marked a citizen for validation</p>
+                                <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">1 hour ago</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-download text-[10px] text-slate-500"></i></div>
+                            <div>
+                                <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">System</span> exported 200 records</p>
+                                <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">2 hours ago</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Recently Registered -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Recently Registered</h3>
-                </div>
-                
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between group">
-                        <div class="flex items-center gap-3">
-                            <img src="https://ui-avatars.com/api/?name=Kevin+Delos&background=random" class="w-8 h-8 rounded-full shadow-sm" alt="Avatar">
-                            <div>
-                                <p class="text-[11px] font-bold text-slate-800 group-hover:text-[#0f53d1] transition cursor-pointer">Kevin Delos Reyes</p>
-                                <p class="text-[9px] text-slate-500 font-medium mt-0.5">May 21, 2025 &bull; District 3</p>
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Recently Registered</h3>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between group">
+                            <div class="flex items-center gap-3">
+                                <img src="https://ui-avatars.com/api/?name=Kevin+Delos&background=random" class="w-8 h-8 rounded-full shadow-sm" alt="Avatar">
+                                <div>
+                                    <p class="text-[11px] font-bold text-slate-800 group-hover:text-[#0f53d1] transition cursor-pointer">Kevin Delos Reyes</p>
+                                    <p class="text-[9px] text-slate-500 font-medium mt-0.5">May 21, 2025 &bull; District 3</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="flex items-center justify-between group">
-                        <div class="flex items-center gap-3">
-                            <img src="https://ui-avatars.com/api/?name=Angela+Bernardo&background=random" class="w-8 h-8 rounded-full shadow-sm" alt="Avatar">
-                            <div>
-                                <p class="text-[11px] font-bold text-slate-800 group-hover:text-[#0f53d1] transition cursor-pointer">Angela Bernardo</p>
-                                <p class="text-[9px] text-slate-500 font-medium mt-0.5">May 21, 2025 &bull; District 1</p>
+                        <div class="flex items-center justify-between group">
+                            <div class="flex items-center gap-3">
+                                <img src="https://ui-avatars.com/api/?name=Angela+Bernardo&background=random" class="w-8 h-8 rounded-full shadow-sm" alt="Avatar">
+                                <div>
+                                    <p class="text-[11px] font-bold text-slate-800 group-hover:text-[#0f53d1] transition cursor-pointer">Angela Bernardo</p>
+                                    <p class="text-[9px] text-slate-500 font-medium mt-0.5">May 21, 2025 &bull; District 1</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="flex items-center justify-between group">
-                        <div class="flex items-center gap-3">
-                            <img src="https://ui-avatars.com/api/?name=Mark+John&background=random" class="w-8 h-8 rounded-full shadow-sm" alt="Avatar">
-                            <div>
-                                <p class="text-[11px] font-bold text-slate-800 group-hover:text-[#0f53d1] transition cursor-pointer">Mark John Lim</p>
-                                <p class="text-[9px] text-slate-500 font-medium mt-0.5">May 20, 2025 &bull; District 2</p>
+                        <div class="flex items-center justify-between group">
+                            <div class="flex items-center gap-3">
+                                <img src="https://ui-avatars.com/api/?name=Mark+John&background=random" class="w-8 h-8 rounded-full shadow-sm" alt="Avatar">
+                                <div>
+                                    <p class="text-[11px] font-bold text-slate-800 group-hover:text-[#0f53d1] transition cursor-pointer">Mark John Lim</p>
+                                    <p class="text-[9px] text-slate-500 font-medium mt-0.5">May 20, 2025 &bull; District 2</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -540,42 +547,42 @@ include '../../includes/sidebar.php';
                 </button>
             </div>
 
-
-
             <!-- Quick Statistics -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Quick Statistics</h3>
-                </div>
-                
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <div class="flex items-center gap-2 text-slate-600">
-                            <i class="fa-solid fa-clock-rotate-left text-[10px] w-4 text-center"></i>
-                            <span class="text-[11px] font-semibold">Average Age</span>
-                        </div>
-                        <span class="text-[11px] font-bold text-slate-800">29.4 years</span>
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Quick Statistics</h3>
                     </div>
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <div class="flex items-center gap-2 text-slate-600">
-                            <i class="fa-solid fa-venus-mars text-[10px] w-4 text-center"></i>
-                            <span class="text-[11px] font-semibold">Male to Female Ratio</span>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <div class="flex items-center gap-2 text-slate-600">
+                                <i class="fa-solid fa-clock-rotate-left text-[10px] w-4 text-center"></i>
+                                <span class="text-[11px] font-semibold">Average Age</span>
+                            </div>
+                            <span class="text-[11px] font-bold text-slate-800">29.4 years</span>
                         </div>
-                        <span class="text-[11px] font-bold text-slate-800">48% : 52%</span>
-                    </div>
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <div class="flex items-center gap-2 text-slate-600">
-                            <i class="fa-solid fa-house-chimney text-[10px] w-4 text-center"></i>
-                            <span class="text-[11px] font-semibold">Total Households</span>
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <div class="flex items-center gap-2 text-slate-600">
+                                <i class="fa-solid fa-venus-mars text-[10px] w-4 text-center"></i>
+                                <span class="text-[11px] font-semibold">Male to Female Ratio</span>
+                            </div>
+                            <span class="text-[11px] font-bold text-slate-800">48% : 52%</span>
                         </div>
-                        <span class="text-[11px] font-bold text-slate-800">3,245</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2 text-slate-600">
-                            <i class="fa-solid fa-bullseye text-[10px] w-4 text-center"></i>
-                            <span class="text-[11px] font-semibold">Data Accuracy Score</span>
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <div class="flex items-center gap-2 text-slate-600">
+                                <i class="fa-solid fa-house-chimney text-[10px] w-4 text-center"></i>
+                                <span class="text-[11px] font-semibold">Total Households</span>
+                            </div>
+                            <span class="text-[11px] font-bold text-slate-800">3,245</span>
                         </div>
-                        <span class="text-[11px] font-bold text-emerald-600">96.8%</span>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 text-slate-600">
+                                <i class="fa-solid fa-bullseye text-[10px] w-4 text-center"></i>
+                                <span class="text-[11px] font-semibold">Data Accuracy Score</span>
+                            </div>
+                            <span class="text-[11px] font-bold text-emerald-600">96.8%</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1150,18 +1157,18 @@ function switchViewMode(mode) {
 
     if (mode === 'household') {
         if (tableBtn) {
-            tableBtn.className = "flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-transparent bg-white shadow-sm cursor-pointer hover:border-slate-200 transition group w-full md:w-auto";
+            tableBtn.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl border-2 border-transparent bg-slate-50 shadow-xs cursor-pointer hover:border-slate-200 transition group";
             const iconDiv = tableBtn.querySelector('div');
             const h4 = tableBtn.querySelector('h4');
-            if (iconDiv) iconDiv.className = "w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-400 group-hover:scale-110 transition-transform group-hover:text-slate-600";
-            if (h4) h4.className = "text-xs font-bold text-slate-700";
+            if (iconDiv) iconDiv.className = "w-6 h-6 rounded-md bg-white flex items-center justify-center border border-slate-200 text-slate-400 text-xs transition-transform group-hover:scale-105 group-hover:text-slate-600";
+            if (h4) h4.className = "text-xs font-bold text-slate-700 leading-tight";
         }
         if (householdBtn) {
-            householdBtn.className = "flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-[#0f53d1]/30 bg-blue-50/50 shadow-sm cursor-pointer hover:bg-blue-50 transition group w-full md:w-auto";
+            householdBtn.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl border-2 border-[#0f53d1]/30 bg-blue-50/50 shadow-xs cursor-pointer hover:bg-blue-50 transition group";
             const iconDiv = householdBtn.querySelector('div');
             const h4 = householdBtn.querySelector('h4');
-            if (iconDiv) iconDiv.className = "w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-[#0f53d1]/20 text-[#0f53d1] group-hover:scale-110 transition-transform";
-            if (h4) h4.className = "text-xs font-bold text-[#0f53d1]";
+            if (iconDiv) iconDiv.className = "w-6 h-6 rounded-md bg-white flex items-center justify-center border border-[#0f53d1]/20 text-[#0f53d1] text-xs transition-transform group-hover:scale-105";
+            if (h4) h4.className = "text-xs font-bold text-[#0f53d1] leading-tight";
         }
 
         // Sort rows by Household ID
@@ -1173,18 +1180,18 @@ function switchViewMode(mode) {
 
     } else {
         if (householdBtn) {
-            householdBtn.className = "flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-transparent bg-white shadow-sm cursor-pointer hover:border-slate-200 transition group w-full md:w-auto";
+            householdBtn.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl border-2 border-transparent bg-slate-50 shadow-xs cursor-pointer hover:border-slate-200 transition group";
             const iconDiv = householdBtn.querySelector('div');
             const h4 = householdBtn.querySelector('h4');
-            if (iconDiv) iconDiv.className = "w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-400 group-hover:scale-110 transition-transform group-hover:text-slate-600";
-            if (h4) h4.className = "text-xs font-bold text-slate-700";
+            if (iconDiv) iconDiv.className = "w-6 h-6 rounded-md bg-white flex items-center justify-center border border-slate-200 text-slate-400 text-xs transition-transform group-hover:scale-105 group-hover:text-slate-600";
+            if (h4) h4.className = "text-xs font-bold text-slate-700 leading-tight";
         }
         if (tableBtn) {
-            tableBtn.className = "flex items-center gap-3 px-5 py-3 rounded-xl border-2 border-[#0f53d1]/30 bg-blue-50/50 shadow-sm cursor-pointer hover:bg-blue-50 transition group w-full md:w-auto";
+            tableBtn.className = "flex items-center gap-2.5 px-3.5 py-2 rounded-xl border-2 border-[#0f53d1]/30 bg-blue-50/50 shadow-xs cursor-pointer hover:bg-blue-50 transition group";
             const iconDiv = tableBtn.querySelector('div');
             const h4 = tableBtn.querySelector('h4');
-            if (iconDiv) iconDiv.className = "w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-[#0f53d1]/20 text-[#0f53d1] group-hover:scale-110 transition-transform";
-            if (h4) h4.className = "text-xs font-bold text-[#0f53d1]";
+            if (iconDiv) iconDiv.className = "w-6 h-6 rounded-md bg-white flex items-center justify-center border border-[#0f53d1]/20 text-[#0f53d1] text-xs transition-transform group-hover:scale-105";
+            if (h4) h4.className = "text-xs font-bold text-[#0f53d1] leading-tight";
         }
 
         // Sort rows by Citizen ID
