@@ -131,7 +131,6 @@ $currentSurvey = $surveys[$selectedSurveyId] ?? $surveys['SRV-2025-001'];
                         <i class="fa-solid fa-circle text-[6px] animate-pulse"></i> Live Syncing
                     </span>
                 </div>
-                <p id="headerSurveySubtitle" class="text-xs text-slate-500 font-medium mt-0.5"><?php echo htmlspecialchars($currentSurvey['title']); ?> (<?php echo $currentSurvey['id']; ?>)</p>
             </div>
         </div>
 
