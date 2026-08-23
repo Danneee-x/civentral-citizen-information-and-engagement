@@ -174,6 +174,11 @@ $surveys = [
                     <i class="fa-solid fa-square-poll-vertical"></i>
                 </div>
                 <div>
+                    <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                        <span>Public Consultation & Survey</span>
+                        <i class="fa-solid fa-chevron-right text-[8px] opacity-60"></i>
+                        <span class="text-brand-dark">Manage Surveys</span>
+                    </div>
                     <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Manage Surveys</h1>
                 </div>
             </div>

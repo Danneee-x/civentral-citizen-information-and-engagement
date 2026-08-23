@@ -22,6 +22,13 @@ include '../../includes/sidebar.php';
 
 <main class="flex-1 p-4 md:p-6 lg:p-8 w-full overflow-y-auto bg-slate-50/50 min-h-[calc(100vh-4rem)] space-y-6">
 
+    <!-- Breadcrumb Header -->
+    <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+        <span>Notifications & Alerts</span>
+        <i class="fa-solid fa-chevron-right text-[8px] opacity-60"></i>
+        <span class="text-brand-dark">Delivery Reports</span>
+    </div>
+
     <!-- Top KPI Summary Cards Row (5 Cards) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
         

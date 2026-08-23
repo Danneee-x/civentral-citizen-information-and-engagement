@@ -2,10 +2,17 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require_once __DIR__ . '/../vendor/autoload.php'; 
+$autoloader = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($autoloader)) {
+    require_once $autoloader;
+}
 require_once __DIR__ . '/database.php';
 
 function sendSystemEmail($toEmail, $toName, $subject, $body) {
+    if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+        error_log("PHPMailer not loaded. Run 'composer install'.");
+        return false;
+    }
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();

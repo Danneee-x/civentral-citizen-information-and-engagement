@@ -133,6 +133,11 @@ $kanbanColumns = [
                 <i class="fa-solid fa-route"></i>
             </div>
             <div>
+                <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    <span>Feedback & Grievance</span>
+                    <i class="fa-solid fa-chevron-right text-[8px] opacity-60"></i>
+                    <span class="text-brand-dark">Concern Routing</span>
+                </div>
                 <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Concern Routing & Dispatch Board</h1>
             </div>
         </div>
@@ -298,12 +303,20 @@ $kanbanColumns = [
             <span id="assignModalTicketId" class="text-xs font-bold text-[#0f53d1]">TCK-2025-0261</span>
 
             <div>
-                <label class="font-bold text-slate-700 block mb-1">Select Barangay Committee / Official</label>
+                <label class="font-bold text-slate-700 block mb-1">Select Department</label>
                 <select id="committeeOfficerSelect" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-2.5 outline-none font-medium text-xs cursor-pointer">
-                    <option value="Kagawad Mark Santos (Infrastructure Committee)">Kagawad Mark Santos (Infrastructure Committee)</option>
-                    <option value="Kagawad Liza Dy (Health & Sanitation Committee)">Kagawad Liza Dy (Health & Sanitation Committee)</option>
-                    <option value="Chief Tanod Roberto Ramos (Peacekeeping Unit)">Chief Tanod Roberto Ramos (Peacekeeping Unit)</option>
-                    <option value="Engr. Mark Santos (Engineering Office)">Engr. Mark Santos (Engineering Office)</option>
+                    <option value="Citizen Assistance / Public Information Office (PIO)">Citizen Assistance / Public Information Office (PIO)</option>
+                    <option value="Office of the Barangay Affairs">Office of the Barangay Affairs</option>
+                    <option value="City Social Welfare and Development Office (CSWDO)">City Social Welfare and Development Office (CSWDO)</option>
+                    <option value="City Health Department / City Health Office">City Health Department / City Health Office</option>
+                    <option value="City Engineering Office">City Engineering Office</option>
+                    <option value="City Environment and Natural Resources Office (CENRO)">City Environment and Natural Resources Office (CENRO)</option>
+                    <option value="Public Order and Safety Office (POSO)">Public Order and Safety Office (POSO)</option>
+                    <option value="City Disaster Risk Reduction and Management Office (CDRRMO)">City Disaster Risk Reduction and Management Office (CDRRMO)</option>
+                    <option value="City Planning and Development Office (CPDO)">City Planning and Development Office (CPDO)</option>
+                    <option value="City Treasurer's Office">City Treasurer's Office</option>
+                    <option value="City Permits and Licensing Office (BPLO)">City Permits and Licensing Office (BPLO)</option>
+                    <option value="City Transport / Traffic Management Office">City Transport / Traffic Management Office</option>
                 </select>
             </div>
 

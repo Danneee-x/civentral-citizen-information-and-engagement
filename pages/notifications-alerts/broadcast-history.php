@@ -22,6 +22,13 @@ include '../../includes/sidebar.php';
 
 <main class="flex-1 p-4 md:p-6 lg:p-8 w-full overflow-y-auto bg-slate-50/50 min-h-[calc(100vh-4rem)] space-y-6">
 
+    <!-- Breadcrumb Header -->
+    <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+        <span>Notifications & Alerts</span>
+        <i class="fa-solid fa-chevron-right text-[8px] opacity-60"></i>
+        <span class="text-brand-dark">Broadcast History</span>
+    </div>
+
     <!-- Top Action Row -->
     <div class="flex items-center justify-end">
         <button type="button" onclick="exportReport()" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer">

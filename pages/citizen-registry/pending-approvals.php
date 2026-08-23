@@ -149,7 +149,12 @@ include '../../includes/sidebar.php';
 
 <main class="flex-1 p-4 md:p-6 lg:p-8 w-full overflow-y-auto bg-slate-50/50 min-h-[calc(100vh-4rem)]">
 
-    <!-- Top Bar Quick Actions -->
+    <!-- Breadcrumb Header -->
+    <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
+        <span>Citizen Registry</span>
+        <i class="fa-solid fa-chevron-right text-[8px] opacity-60"></i>
+        <span class="text-brand-dark">Pending Approvals</span>
+    </div>
     <div class="flex flex-col sm:flex-row sm:items-center justify-end gap-4 mb-6">
         <div class="flex items-center gap-2 flex-wrap">
             <button class="px-3.5 py-2 text-xs font-bold text-[#0f53d1] bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 shadow-xs">

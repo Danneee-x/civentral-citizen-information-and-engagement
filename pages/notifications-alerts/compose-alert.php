@@ -60,9 +60,12 @@ include '../../includes/sidebar.php';
 
 <main class="flex-1 p-4 md:p-6 lg:p-8 w-full overflow-y-auto bg-slate-50/50 min-h-[calc(100vh-4rem)] space-y-6">
 
-
-
-    <!-- Compose Alert Main Grid -->
+    <!-- Breadcrumb Header -->
+    <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+        <span>Notifications & Alerts</span>
+        <i class="fa-solid fa-chevron-right text-[8px] opacity-60"></i>
+        <span class="text-brand-dark">Compose Alert</span>
+    </div>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
         <!-- LEFT COLUMN (7 Cols) -->

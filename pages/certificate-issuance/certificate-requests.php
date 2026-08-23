@@ -126,6 +126,11 @@ $requests = [
                 <i class="fa-solid fa-file-signature"></i>
             </div>
             <div>
+                <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    <span>Barangay Certificate & ID Issuance</span>
+                    <i class="fa-solid fa-chevron-right text-[8px] opacity-60"></i>
+                    <span class="text-brand-dark">Certificate Requests</span>
+                </div>
                 <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Certificate Requests</h1>
             </div>
         </div>

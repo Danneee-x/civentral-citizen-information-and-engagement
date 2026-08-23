@@ -121,10 +121,15 @@ $currentSurvey = $surveys[$selectedSurveyId] ?? $surveys['SRV-2025-001'];
     <!-- Top Action & Survey Selector Header Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div class="flex items-center gap-3">
-            <a href="manage-surveys.php" class="w-9 h-9 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer text-xs shadow-xs" title="Back to Surveys">
-                <i class="fa-solid fa-arrow-left"></i>
-            </a>
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#0f53d1] flex items-center justify-center text-lg border border-blue-100 shadow-xs">
+                <i class="fa-solid fa-chart-pie"></i>
+            </div>
             <div>
+                <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    <span>Public Consultation & Survey</span>
+                    <i class="fa-solid fa-chevron-right text-[8px] opacity-60"></i>
+                    <span class="text-brand-dark">Live Results</span>
+                </div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Live Results</h1>
                     <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center gap-1">

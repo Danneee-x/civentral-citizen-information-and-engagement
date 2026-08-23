@@ -11,7 +11,12 @@ $basePathResolver = $basePath ?? '../';
 
     <main class="flex-1 p-6 md:p-8 max-w-7xl mx-auto space-y-6 overflow-y-auto">
       
-      <!-- Glassmorphic Glowing Widgets Grid -->
+      <!-- Breadcrumb Header -->
+      <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+        <span>Citizen Information & Engagement</span>
+        <i class="fa-solid fa-chevron-right text-[8px] opacity-60"></i>
+        <span class="text-brand-dark">Dashboard Overview</span>
+      </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         
         <!-- Widget 1: Registered Citizens -->

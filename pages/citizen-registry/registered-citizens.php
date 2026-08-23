@@ -54,7 +54,12 @@ include '../../includes/sidebar.php';
 
 <main class="flex-1 p-4 md:p-6 lg:p-8 w-full overflow-y-auto bg-slate-50/50 min-h-[calc(100vh-4rem)]">
     
-    <!-- KPI Cards Row -->
+    <!-- Breadcrumb Header -->
+    <div class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-6">
+        <span>Citizen Registry</span>
+        <i class="fa-solid fa-chevron-right text-[8px] opacity-60"></i>
+        <span class="text-brand-dark">Registered Citizens</span>
+    </div>
     <!-- KPI Cards Row (2 lines x 4 boxes on desktop, responsive on smaller screens) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <!-- Card 1 -->
