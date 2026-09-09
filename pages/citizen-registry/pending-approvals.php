@@ -2,114 +2,118 @@
 $basePath = '../../';
 require_once __DIR__ . '/../../src/bootstrap.php';
 
-// Dummy Applications Data
-$applications = [
-    [
-        'id' => 'APP-2025-0421',
-        'applicant' => 'Juan Dela Cruz',
-        'avatar' => 'https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=random',
-        'date' => 'May 19, 2025',
-        'time' => '09:21 AM',
-        'submitted_by' => 'Self-Service',
-        'district' => 'District 3',
-        'reviewer' => 'Maria Santos',
-        'reviewer_avatar' => 'https://ui-avatars.com/api/?name=Maria+Santos&background=random',
-        'docs_count' => '+2',
-        'status' => 'Pending',
-        'priority' => 'High',
-        'selected' => true
-    ],
-    [
-        'id' => 'APP-2025-0420',
-        'applicant' => 'Ana Marie Reyes',
-        'avatar' => 'https://ui-avatars.com/api/?name=Ana+Reyes&background=random',
-        'date' => 'May 19, 2025',
-        'time' => '08:45 AM',
-        'submitted_by' => 'Staff: John Cruz',
-        'district' => 'District 2',
-        'reviewer' => 'John Cruz',
-        'reviewer_avatar' => 'https://ui-avatars.com/api/?name=John+Cruz&background=random',
-        'docs_count' => '+1',
-        'status' => 'Under Review',
-        'priority' => 'Medium',
-        'selected' => true
-    ],
-    [
-        'id' => 'APP-2025-0419',
-        'applicant' => 'Pedro Mendoza',
-        'avatar' => 'https://ui-avatars.com/api/?name=Pedro+Mendoza&background=random',
-        'date' => 'May 19, 2025',
-        'time' => '08:15 AM',
-        'submitted_by' => 'Self-Service',
-        'district' => 'District 1',
-        'reviewer' => 'Maria Santos',
-        'reviewer_avatar' => 'https://ui-avatars.com/api/?name=Maria+Santos&background=random',
-        'docs_count' => '+3',
-        'status' => 'Waiting for Applicant',
-        'priority' => 'High',
-        'selected' => true
-    ],
-    [
-        'id' => 'APP-2025-0418',
-        'applicant' => 'Rosa Valdez',
-        'avatar' => 'https://ui-avatars.com/api/?name=Rosa+Valdez&background=random',
-        'date' => 'May 18, 2025',
-        'time' => '05:30 PM',
-        'submitted_by' => 'Staff: Liza Dy',
-        'district' => 'District 1',
-        'reviewer' => 'Liza Dy',
-        'reviewer_avatar' => 'https://ui-avatars.com/api/?name=Liza+Dy&background=random',
-        'docs_count' => '+2',
-        'status' => 'Pending',
-        'priority' => 'Medium',
-        'selected' => false
-    ],
-    [
-        'id' => 'APP-2025-0417',
-        'applicant' => 'Michael Santos',
-        'avatar' => 'https://ui-avatars.com/api/?name=Michael+Santos&background=random',
-        'date' => 'May 18, 2025',
-        'time' => '04:12 PM',
-        'submitted_by' => 'Self-Service',
-        'district' => 'District 3',
-        'reviewer' => 'Unassigned',
-        'reviewer_avatar' => '',
-        'docs_count' => '+1',
-        'status' => 'Pending',
-        'priority' => 'Low',
-        'selected' => false
-    ],
-    [
-        'id' => 'APP-2025-0416',
-        'applicant' => 'Emily Johnson',
-        'avatar' => 'https://ui-avatars.com/api/?name=Emily+Johnson&background=random',
-        'date' => 'May 18, 2025',
-        'time' => '03:40 PM',
-        'submitted_by' => 'Staff: John Cruz',
-        'district' => 'District 2',
-        'reviewer' => 'John Cruz',
-        'reviewer_avatar' => 'https://ui-avatars.com/api/?name=John+Cruz&background=random',
-        'docs_count' => '+1',
-        'status' => 'Under Review',
-        'priority' => 'High',
-        'selected' => false
-    ],
-    [
-        'id' => 'APP-2025-0415',
-        'applicant' => 'Carlos Miguel',
-        'avatar' => 'https://ui-avatars.com/api/?name=Carlos+Miguel&background=random',
-        'date' => 'May 18, 2025',
-        'time' => '02:55 PM',
-        'submitted_by' => 'Self-Service',
-        'district' => 'District 2',
-        'reviewer' => 'Maria Santos',
-        'reviewer_avatar' => 'https://ui-avatars.com/api/?name=Maria+Santos&background=random',
-        'docs_count' => '+1',
-        'status' => 'Pending',
-        'priority' => 'Low',
-        'selected' => false
-    ]
+// Real Applications & Metrics Data from MySQL
+require_once __DIR__ . '/../../config/database.php';
+
+$applications = [];
+$counts = [
+    'total' => 0,
+    'pending' => 0,
+    'approved' => 0,
+    'rejected' => 0,
+    'awaiting' => 0,
+    'today_approved' => 0,
+    'today_rejected' => 0,
 ];
+
+try {
+    $pdo = getDbConnection();
+
+    // Ensure citizen_verifications table exists
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `citizen_verifications` (
+        `verification_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `citizen_user_id` INT UNSIGNED NULL,
+        `first_name` VARCHAR(100) NOT NULL,
+        `middle_name` VARCHAR(100) NULL,
+        `last_name` VARCHAR(100) NOT NULL,
+        `suffix` VARCHAR(20) NULL,
+        `sex` VARCHAR(20) NOT NULL,
+        `place_of_birth` VARCHAR(255) NOT NULL,
+        `birth_date` DATE NOT NULL,
+        `civil_status` VARCHAR(50) NOT NULL,
+        `employment_status` VARCHAR(100) NOT NULL,
+        `occupation` VARCHAR(150) NOT NULL,
+        `educational_attainment` VARCHAR(100) NOT NULL,
+        `district` VARCHAR(50) NOT NULL,
+        `barangay` VARCHAR(100) NOT NULL,
+        `street_address` VARCHAR(255) NOT NULL,
+        `years_resident` INT UNSIGNED NOT NULL,
+        `valid_id_type` VARCHAR(100) NOT NULL,
+        `valid_id_number` VARCHAR(100) NOT NULL,
+        `id_front_photo_url` VARCHAR(500) NULL,
+        `selfie_photo_url` VARCHAR(500) NULL,
+        `verification_status` ENUM('Pending', 'Under_Review', 'Approved', 'Rejected') NOT NULL DEFAULT 'Pending',
+        `reviewed_by` VARCHAR(100) NULL,
+        `rejection_reason` TEXT NULL,
+        `reviewed_at` DATETIME NULL,
+        `submitted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // Fetch counts
+    $statsStmt = $pdo->query("SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN verification_status = 'Pending' THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN verification_status = 'Approved' THEN 1 ELSE 0 END) as approved,
+        SUM(CASE WHEN verification_status = 'Rejected' THEN 1 ELSE 0 END) as rejected,
+        SUM(CASE WHEN verification_status = 'Approved' AND DATE(reviewed_at) = CURDATE() THEN 1 ELSE 0 END) as today_approved,
+        SUM(CASE WHEN verification_status = 'Rejected' AND DATE(reviewed_at) = CURDATE() THEN 1 ELSE 0 END) as today_rejected
+        FROM citizen_verifications");
+    $dbStats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+
+    $counts['total']          = (int)($dbStats['total'] ?? 0);
+    $counts['pending']        = (int)($dbStats['pending'] ?? 0);
+    $counts['approved']       = (int)($dbStats['approved'] ?? 0);
+    $counts['rejected']       = (int)($dbStats['rejected'] ?? 0);
+    $counts['awaiting']       = $counts['pending'];
+    $counts['today_approved'] = (int)($dbStats['today_approved'] ?? 0);
+    $counts['today_rejected'] = (int)($dbStats['today_rejected'] ?? 0);
+
+    // Fetch real applications
+    $stmt = $pdo->query("SELECT * FROM citizen_verifications ORDER BY submitted_at DESC LIMIT 100");
+    $dbRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($dbRows as $row) {
+        $fullName = trim("{$row['first_name']} {$row['middle_name']} {$row['last_name']} {$row['suffix']}");
+        $dt = !empty($row['submitted_at']) ? new DateTime($row['submitted_at']) : new DateTime();
+        $statusDisplay = $row['verification_status'] === 'Under_Review' ? 'Under Review' : $row['verification_status'];
+
+        $applications[] = [
+            'id' => 'VER-' . str_pad($row['verification_id'], 4, '0', STR_PAD_LEFT),
+            'raw_id' => $row['verification_id'],
+            'citizen_user_id' => $row['citizen_user_id'] ?? 0,
+            'applicant' => $fullName,
+            'first_name' => $row['first_name'],
+            'middle_name' => $row['middle_name'] ?? '',
+            'last_name' => $row['last_name'],
+            'suffix' => $row['suffix'] ?? '',
+            'sex' => $row['sex'] ?? 'Not Specified',
+            'birth_date' => $row['birth_date'] ?? '',
+            'civil_status' => $row['civil_status'] ?? '',
+            'employment_status' => $row['employment_status'] ?? '',
+            'occupation' => $row['occupation'] ?? '',
+            'street_address' => $row['street_address'] ?? '',
+            'years_resident' => $row['years_resident'] ?? 1,
+            'valid_id_type' => $row['valid_id_type'] ?? 'Valid ID',
+            'valid_id_number' => $row['valid_id_number'] ?? '',
+            'id_front_photo_url' => $row['id_front_photo_url'] ?? '',
+            'selfie_photo_url' => $row['selfie_photo_url'] ?? '',
+            'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($fullName) . '&background=random',
+            'date' => $dt->format('M d, Y'),
+            'time' => $dt->format('h:i A'),
+            'submitted_by' => 'Citizen Mobile App',
+            'district' => $row['district'] ?? 'District 1',
+            'barangay' => $row['barangay'] ?? '',
+            'reviewer' => !empty($row['reviewed_by']) ? $row['reviewed_by'] : 'Unassigned',
+            'reviewer_avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($row['reviewed_by'] ?? 'Admin') . '&background=random',
+            'docs_count' => '+2',
+            'status' => $statusDisplay,
+            'priority' => ($row['years_resident'] ?? 0) >= 5 ? 'High' : 'Medium',
+            'selected' => false
+        ];
+    }
+} catch (Exception $e) {
+    error_log("Pending approvals fetch error: " . $e->getMessage());
+}
 
 function getAppStatusBadge($status) {
     switch ($status) {
@@ -182,7 +186,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div>
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide leading-tight">Total Pending<br>Applications</p>
-                    <h3 class="text-lg font-black text-slate-800 mt-0.5">42</h3>
+                    <h3 class="text-lg font-black text-slate-800 mt-0.5"><?php echo $counts['pending']; ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1 mt-2 text-[9px] font-semibold text-emerald-500">
@@ -198,7 +202,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div>
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide leading-tight">Awaiting<br>Review</p>
-                    <h3 class="text-lg font-black text-slate-800 mt-0.5">28</h3>
+                    <h3 class="text-lg font-black text-slate-800 mt-0.5"><?php echo $counts['awaiting']; ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1 mt-2 text-[9px] font-semibold text-emerald-500">
@@ -230,7 +234,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div>
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide leading-tight">Approved<br>Today</p>
-                    <h3 class="text-lg font-black text-slate-800 mt-0.5">16</h3>
+                    <h3 class="text-lg font-black text-slate-800 mt-0.5"><?php echo $counts['today_approved']; ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1 mt-2 text-[9px] font-semibold text-emerald-500">
@@ -246,7 +250,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div>
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide leading-tight">Rejected<br>Today</p>
-                    <h3 class="text-lg font-black text-slate-800 mt-0.5">3</h3>
+                    <h3 class="text-lg font-black text-slate-800 mt-0.5"><?php echo $counts['today_rejected']; ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1 mt-2 text-[9px] font-semibold text-red-500">
@@ -382,7 +386,7 @@ include '../../includes/sidebar.php';
                 
                 <!-- Table Header Actions Bar -->
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-slate-100 gap-3">
-                    <span id="applicationsFoundText" class="text-xs font-bold text-slate-800">7 applications found</span>
+                    <span id="applicationsFoundText" class="text-xs font-bold text-slate-800"><?php echo count($applications); ?> applications found</span>
 
                     <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                         <select class="bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg px-3 py-1.5 outline-none cursor-pointer">
@@ -414,27 +418,45 @@ include '../../includes/sidebar.php';
                                 <th class="p-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100">
+                        <tbody class="divide-y divide-slate-100" id="pendingTableBody">
+                            <?php if (empty($applications)): ?>
+                            <tr>
+                                <td colspan="10" class="p-12 text-center text-slate-400">
+                                    <div class="flex flex-col items-center justify-center gap-2">
+                                        <i class="fa-regular fa-folder-open text-4xl text-slate-300"></i>
+                                        <p class="font-bold text-slate-700 text-sm">No Citizen Verifications in Queue</p>
+                                        <p class="text-xs text-slate-400">Submissions from the citizen mobile app will appear here in real time.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php else: ?>
                             <?php foreach ($applications as $app): ?>
-                            <tr onclick="selectPendingApplication(this, '<?php echo $app['id']; ?>', '<?php echo htmlspecialchars(addslashes($app['applicant'])); ?>', '<?php echo htmlspecialchars($app['status']); ?>')" class="pending-app-row hover:bg-slate-50/80 transition cursor-pointer" data-district="<?php echo htmlspecialchars($app['district']); ?>">
+                            <tr onclick="selectPendingApplication(this)" 
+                                class="pending-app-row hover:bg-slate-50/80 transition cursor-pointer" 
+                                data-district="<?php echo htmlspecialchars($app['district']); ?>"
+                                data-app='<?php echo htmlspecialchars(json_encode($app), ENT_QUOTES, "UTF-8"); ?>'
+                                id="row-<?php echo $app['raw_id']; ?>">
                                 <td class="p-3.5 text-xs font-bold text-slate-700"><?php echo $app['id']; ?></td>
                                 <td class="p-3.5">
                                     <div class="flex items-center gap-2.5">
-                                        <img src="<?php echo $app['avatar']; ?>" class="w-7 h-7 rounded-full border border-slate-200" alt="Avatar">
-                                        <span class="text-xs font-bold text-slate-900"><?php echo $app['applicant']; ?></span>
+                                        <img src="<?php echo $app['avatar']; ?>" class="w-7 h-7 rounded-full border border-slate-200 shrink-0" alt="Avatar">
+                                        <div>
+                                            <span class="text-xs font-bold text-slate-900 block"><?php echo htmlspecialchars($app['applicant']); ?></span>
+                                            <span class="text-[10px] text-slate-400"><?php echo htmlspecialchars($app['barangay']); ?></span>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="p-3.5">
                                     <div class="text-xs font-medium text-slate-700"><?php echo $app['date']; ?></div>
                                     <div class="text-[10px] text-slate-400"><?php echo $app['time']; ?></div>
                                 </td>
-                                <td class="p-3.5 text-xs text-slate-600 font-medium"><?php echo $app['submitted_by']; ?></td>
-                                <td class="p-3.5 text-xs text-slate-600 font-medium"><?php echo $app['district']; ?></td>
+                                <td class="p-3.5 text-xs text-slate-600 font-medium"><?php echo htmlspecialchars($app['submitted_by']); ?></td>
+                                <td class="p-3.5 text-xs text-slate-600 font-medium"><?php echo htmlspecialchars($app['district']); ?></td>
                                 <td class="p-3.5">
                                     <?php if ($app['reviewer'] !== 'Unassigned'): ?>
                                         <div class="flex items-center gap-2">
                                             <img src="<?php echo $app['reviewer_avatar']; ?>" class="w-6 h-6 rounded-full border border-slate-200" alt="Reviewer">
-                                            <span class="text-xs text-slate-700 font-medium"><?php echo $app['reviewer']; ?></span>
+                                            <span class="text-xs text-slate-700 font-medium"><?php echo htmlspecialchars($app['reviewer']); ?></span>
                                         </div>
                                     <?php else: ?>
                                         <div class="flex items-center gap-1.5 text-slate-400">
@@ -445,13 +467,13 @@ include '../../includes/sidebar.php';
                                 </td>
                                 <td class="p-3.5">
                                     <div class="flex items-center gap-1">
-                                        <div class="w-6 h-6 rounded bg-slate-200 border border-slate-300 overflow-hidden flex items-center justify-center"><i class="fa-solid fa-file-image text-[10px] text-slate-500"></i></div>
-                                        <div class="w-6 h-6 rounded bg-slate-200 border border-slate-300 overflow-hidden flex items-center justify-center"><i class="fa-solid fa-id-card text-[10px] text-slate-500"></i></div>
-                                        <span class="text-[10px] font-bold text-white bg-slate-700 px-1.5 py-0.5 rounded"><?php echo $app['docs_count']; ?></span>
+                                        <div class="w-6 h-6 rounded bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-500" title="Valid ID"><i class="fa-solid fa-id-card text-[10px]"></i></div>
+                                        <div class="w-6 h-6 rounded bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-500" title="Selfie Photo"><i class="fa-solid fa-camera text-[10px]"></i></div>
+                                        <span class="text-[10px] font-bold text-white bg-slate-700 px-1.5 py-0.5 rounded">2 docs</span>
                                     </div>
                                 </td>
                                 <td class="p-3.5">
-                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-md border <?php echo getAppStatusBadge($app['status']); ?>">
+                                    <span id="badge-<?php echo $app['raw_id']; ?>" class="px-2 py-0.5 text-[10px] font-bold rounded-md border <?php echo getAppStatusBadge($app['status']); ?>">
                                         <?php echo $app['status']; ?>
                                     </span>
                                 </td>
@@ -461,14 +483,13 @@ include '../../includes/sidebar.php';
                                     </span>
                                 </td>
                                 <td class="p-3.5 text-center">
-                                    <div class="flex items-center justify-center gap-1.5">
-                                        <button class="w-6 h-6 rounded hover:bg-slate-200/60 flex items-center justify-center text-slate-400 hover:text-slate-700 transition"><i class="fa-regular fa-eye text-xs"></i></button>
-                                        <button class="w-6 h-6 rounded hover:bg-slate-200/60 flex items-center justify-center text-slate-400 hover:text-slate-700 transition"><i class="fa-solid fa-ellipsis-vertical text-xs"></i></button>
-                                    </div>
+                                    <button class="w-6 h-6 rounded hover:bg-slate-200/60 flex items-center justify-center text-slate-400 hover:text-slate-700 transition mx-auto">
+                                        <i class="fa-regular fa-eye text-xs"></i>
+                                    </button>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
-                        </tbody>
+                            <?php endif; ?></tbody>
                     </table>
                 </div>
 
@@ -524,80 +545,76 @@ include '../../includes/sidebar.php';
             <div class="space-y-3">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xs font-black text-slate-800 tracking-wide uppercase">Applicant Information</h3>
-                    <a href="#" class="text-[10px] font-bold text-[#0f53d1] hover:underline">View Full Profile</a>
                 </div>
 
                 <div class="grid grid-cols-2 gap-y-2.5 gap-x-4 text-xs">
                     <div>
                         <span class="text-slate-400 block text-[10px] font-semibold">Full Name</span>
-                        <span id="drawerApplicantName" class="font-bold text-slate-800">Juan Dela Cruz</span>
+                        <span id="drawerApplicantName" class="font-bold text-slate-800">Select an applicant</span>
                     </div>
                     <div>
                         <span class="text-slate-400 block text-[10px] font-semibold">Birthdate</span>
-                        <span class="font-bold text-slate-800">March 12, 1995 (30)</span>
+                        <span id="drawerBirthdate" class="font-bold text-slate-800">-</span>
                     </div>
                     <div>
                         <span class="text-slate-400 block text-[10px] font-semibold">Sex</span>
-                        <span class="font-bold text-slate-800">Male</span>
+                        <span id="drawerSex" class="font-bold text-slate-800">-</span>
                     </div>
                     <div>
                         <span class="text-slate-400 block text-[10px] font-semibold">Civil Status</span>
-                        <span class="font-bold text-slate-800">Single</span>
+                        <span id="drawerCivilStatus" class="font-bold text-slate-800">-</span>
                     </div>
                     <div>
-                        <span class="text-slate-400 block text-[10px] font-semibold">Citizenship</span>
-                        <span class="font-bold text-slate-800">Filipino</span>
+                        <span class="text-slate-400 block text-[10px] font-semibold">Employment / Occupation</span>
+                        <span id="drawerEmployment" class="font-bold text-slate-800">-</span>
                     </div>
                     <div>
-                        <span class="text-slate-400 block text-[10px] font-semibold">Mobile Number</span>
-                        <span class="font-bold text-slate-800">0917 123 4567</span>
+                        <span class="text-slate-400 block text-[10px] font-semibold">Residency (Years)</span>
+                        <span id="drawerYearsResident" class="font-bold text-slate-800">-</span>
                     </div>
                     <div class="col-span-2">
-                        <span class="text-slate-400 block text-[10px] font-semibold">Email</span>
-                        <span class="font-bold text-slate-800">juan.delacruz@email.com</span>
+                        <span class="text-slate-400 block text-[10px] font-semibold">Barangay & District</span>
+                        <span id="drawerBarangayDistrict" class="font-bold text-slate-800 leading-snug">-</span>
                     </div>
                     <div class="col-span-2">
-                        <span class="text-slate-400 block text-[10px] font-semibold">Address</span>
-                        <span class="font-bold text-slate-800 leading-snug">Blk. 12 Lot 5, District 3, Commonwealth, Quezon City</span>
+                        <span class="text-slate-400 block text-[10px] font-semibold">Street Address</span>
+                        <span id="drawerAddress" class="font-bold text-slate-800 leading-snug">-</span>
                     </div>
                     <div>
-                        <span class="text-slate-400 block text-[10px] font-semibold">Household ID</span>
-                        <span class="font-bold text-slate-800">HH-2025-00987</span>
+                        <span class="text-slate-400 block text-[10px] font-semibold">Valid ID Type</span>
+                        <span id="drawerValidIdType" class="font-bold text-brand-dark">-</span>
                     </div>
                     <div>
-                        <span class="text-slate-400 block text-[10px] font-semibold">Household Head</span>
-                        <span class="font-bold text-slate-800">Maria Dela Cruz</span>
+                        <span class="text-slate-400 block text-[10px] font-semibold">Valid ID Number</span>
+                        <span id="drawerValidIdNumber" class="font-bold text-slate-800">-</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Uploaded Documents -->
+            <!-- Uploaded Documents (Real photos from mobile app) -->
             <div class="space-y-3 pt-2 border-t border-slate-100">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-xs font-black text-slate-800 tracking-wide uppercase">Uploaded Documents (5)</h3>
-                    <a href="#" class="text-[10px] font-bold text-[#0f53d1] hover:underline">View All</a>
+                    <h3 class="text-xs font-black text-slate-800 tracking-wide uppercase">Submitted Verification Photos</h3>
+                    <span id="drawerPhotoCount" class="text-[10px] font-bold text-brand-dark">2 Photos</span>
                 </div>
 
-                <div class="grid grid-cols-4 gap-2 relative">
-                    <div class="flex flex-col items-center gap-1 text-center">
-                        <div class="w-full h-16 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 overflow-hidden"><i class="fa-solid fa-file-lines text-xl"></i></div>
-                        <span class="text-[9px] font-semibold text-slate-600 truncate w-full">Proof of Residency</span>
-                        <span class="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fa-solid fa-check"></i> Clear</span>
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Front ID Photo -->
+                    <div class="flex flex-col items-center gap-1.5 text-center p-2 rounded-xl bg-slate-50 border border-slate-200">
+                        <div id="drawerIdPhotoBox" class="w-full h-28 bg-slate-200 rounded-lg border border-slate-300 flex items-center justify-center overflow-hidden">
+                            <i class="fa-solid fa-id-card text-2xl text-slate-400"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-700">Valid ID (Front)</span>
+                        <span id="drawerIdPhotoStatus" class="text-[9px] font-semibold text-emerald-600 flex items-center gap-1"><i class="fa-solid fa-check"></i> Attached</span>
                     </div>
-                    <div class="flex flex-col items-center gap-1 text-center">
-                        <div class="w-full h-16 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 overflow-hidden"><i class="fa-solid fa-id-card text-xl"></i></div>
-                        <span class="text-[9px] font-semibold text-slate-600 truncate w-full">Government ID</span>
-                        <span class="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fa-solid fa-check"></i> Clear</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-1 text-center">
-                        <div class="w-full h-16 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 overflow-hidden"><i class="fa-solid fa-certificate text-xl"></i></div>
-                        <span class="text-[9px] font-semibold text-slate-600 truncate w-full">Barangay Cert.</span>
-                        <span class="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fa-solid fa-check"></i> Clear</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-1 text-center">
-                        <div class="w-full h-16 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 overflow-hidden"><i class="fa-solid fa-file text-xl"></i></div>
-                        <span class="text-[9px] font-semibold text-slate-600 truncate w-full">Other Doc.</span>
-                        <span class="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5"><i class="fa-solid fa-check"></i> Clear</span>
+
+                    <!-- Selfie Photo -->
+                    <div class="flex flex-col items-center gap-1.5 text-center p-2 rounded-xl bg-slate-50 border border-slate-200">
+                        <div id="drawerSelfiePhotoBox" class="w-full h-28 bg-slate-200 rounded-lg border border-slate-300 flex items-center justify-center overflow-hidden">
+                            <i class="fa-solid fa-camera text-2xl text-slate-400"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-700">Selfie Verification</span>
+                        <span id="drawerSelfiePhotoStatus" class="text-[9px] font-semibold text-emerald-600 flex items-center gap-1"><i class="fa-solid fa-check"></i> Attached</span>
                     </div>
                 </div>
             </div>
@@ -606,11 +623,7 @@ include '../../includes/sidebar.php';
             <div class="space-y-3 pt-2 border-t border-slate-100">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xs font-black text-slate-800 tracking-wide uppercase">Verification Checklist</h3>
-                    <span class="text-[10px] font-bold text-emerald-600">6/7 Completed</span>
-                </div>
-
-                <div class="w-full bg-slate-100 rounded-full h-1.5">
-                    <div class="bg-emerald-500 h-1.5 rounded-full" style="width: 85%"></div>
+                    <span class="text-[10px] font-bold text-emerald-600">ID & Selfie Verified</span>
                 </div>
 
                 <div class="space-y-1.5 text-xs">
@@ -620,71 +633,25 @@ include '../../includes/sidebar.php';
                     </div>
                     <div class="flex items-center gap-2 text-slate-700 font-medium">
                         <i class="fa-regular fa-circle-check text-emerald-500 text-sm"></i>
-                        <span>Address verified</span>
+                        <span>Caloocan address verified</span>
                     </div>
                     <div class="flex items-center gap-2 text-slate-700 font-medium">
                         <i class="fa-regular fa-circle-check text-emerald-500 text-sm"></i>
-                        <span>Government ID matches applicant</span>
+                        <span>Valid ID matches citizen name</span>
                     </div>
-                    <div class="flex items-center gap-2 text-slate-700 font-medium">
-                        <i class="fa-regular fa-circle-check text-emerald-500 text-sm"></i>
-                        <span>Proof of residency verified</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-slate-700 font-medium">
-                        <i class="fa-regular fa-circle-check text-emerald-500 text-sm"></i>
-                        <span>Duplicate citizen record checked</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-slate-700 font-medium">
-                        <i class="fa-regular fa-circle-check text-emerald-500 text-sm"></i>
-                        <span>Household information verified</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-slate-400 font-medium">
-                        <i class="fa-regular fa-circle text-slate-300 text-sm"></i>
-                        <span>Required documents complete</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Reviewer Notes -->
-            <div class="space-y-2 pt-2 border-t border-slate-100">
-                <h3 class="text-xs font-black text-slate-800 tracking-wide uppercase">Reviewer Notes (Internal)</h3>
-                
-                <div class="border border-slate-200 rounded-xl p-2 bg-slate-50 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0f53d1]/30 transition">
-                    <div class="flex items-center gap-2 text-slate-400 text-xs border-b border-slate-200/80 pb-1.5 mb-1.5 px-1">
-                        <span class="text-[11px]">@ Mention a reviewer...</span>
-                        <div class="ml-auto flex items-center gap-2 font-bold">
-                            <button class="hover:text-slate-700">B</button>
-                            <button class="hover:text-slate-700 italic">I</button>
-                            <button class="hover:text-slate-700 underline">U</button>
-                            <button class="hover:text-slate-700"><i class="fa-solid fa-list-ul text-[10px]"></i></button>
-                            <button class="hover:text-slate-700"><i class="fa-solid fa-smile text-[10px]"></i></button>
-                            <button class="hover:text-slate-700"><i class="fa-solid fa-paperclip text-[10px]"></i></button>
-                        </div>
-                    </div>
-                    <textarea rows="2" placeholder="Write internal notes here..." class="w-full bg-transparent text-xs text-slate-700 outline-none resize-none px-1 placeholder-slate-400"></textarea>
                 </div>
             </div>
 
             <!-- Decision Action Buttons Grid -->
             <div class="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-100">
-                <button class="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                <button id="btnApproveApp" onclick="handleApproveApplication()" class="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-check"></i>
                     <span>Approve Registration</span>
                 </button>
 
-                <button class="py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                <button id="btnRejectApp" onclick="handleRejectApplication()" class="py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-xmark"></i>
                     <span>Reject Registration</span>
-                </button>
-
-                <button class="py-2.5 px-3 bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    <span>Request More Info</span>
-                </button>
-
-                <button class="py-2.5 px-3 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-user-plus"></i>
-                    <span>Assign Reviewer</span>
                 </button>
             </div>
 
@@ -725,12 +692,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    if (districtFilter) {
-        districtFilter.addEventListener('change', applyDistrictFilter);
-    }
-    if (searchBtn) {
-        searchBtn.addEventListener('click', applyDistrictFilter);
-    }
+    if (districtFilter) districtFilter.addEventListener('change', applyDistrictFilter);
+    if (searchBtn) searchBtn.addEventListener('click', applyDistrictFilter);
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', function () {
             if (districtFilter) districtFilter.value = '';
@@ -760,37 +723,71 @@ function togglePendingFilterGrid() {
     }
 }
 
-let activeAppId = null;
+let activeApp = null;
 
-function selectPendingApplication(rowElement, appId, applicantName, status) {
+function selectPendingApplication(rowElement) {
+    const rawData = rowElement.getAttribute('data-app');
+    if (!rawData) return;
+
+    const app = JSON.parse(rawData);
     const drawer = document.getElementById('pendingDetailDrawer');
     if (!drawer) return;
 
-    if (activeAppId === appId && !drawer.classList.contains('hidden')) {
+    if (activeApp && activeApp.raw_id === app.raw_id && !drawer.classList.contains('hidden')) {
         closePendingDrawer();
         return;
     }
 
-    activeAppId = appId;
+    activeApp = app;
     document.querySelectorAll('.pending-app-row').forEach(r => {
         r.classList.remove('bg-blue-50/40', 'bg-blue-50/30');
     });
     rowElement.classList.add('bg-blue-50/40');
 
-    const drawerId = document.getElementById('drawerAppId');
-    const drawerName = document.getElementById('drawerApplicantName');
-    const drawerStatus = document.getElementById('drawerAppStatus');
+    // Populate drawer elements
+    document.getElementById('drawerAppId').textContent = app.id;
+    document.getElementById('drawerApplicantName').textContent = app.applicant;
+    
+    const statusSpan = document.getElementById('drawerAppStatus');
+    if (statusSpan) {
+        statusSpan.textContent = app.status;
+        statusSpan.className = 'px-2 py-0.5 text-[10px] font-bold rounded-md border ' + 
+            (app.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+             app.status === 'Rejected' ? 'bg-red-50 text-red-600 border-red-200' :
+             'bg-amber-50 text-amber-600 border-amber-200/80');
+    }
 
-    if (drawerId) drawerId.textContent = appId;
-    if (drawerName) drawerName.textContent = applicantName;
-    if (drawerStatus) drawerStatus.textContent = status;
+    document.getElementById('drawerBirthdate').textContent = app.birth_date || 'N/A';
+    document.getElementById('drawerSex').textContent = app.sex || 'N/A';
+    document.getElementById('drawerCivilStatus').textContent = app.civil_status || 'N/A';
+    document.getElementById('drawerEmployment').textContent = (app.employment_status || '') + (app.occupation ? ' - ' + app.occupation : '');
+    document.getElementById('drawerYearsResident').textContent = (app.years_resident || 1) + ' year(s)';
+    document.getElementById('drawerBarangayDistrict').textContent = (app.barangay ? app.barangay + ', ' : '') + (app.district || '');
+    document.getElementById('drawerAddress').textContent = app.street_address || 'No street address provided';
+    document.getElementById('drawerValidIdType').textContent = app.valid_id_type || 'Valid ID';
+    document.getElementById('drawerValidIdNumber').textContent = app.valid_id_number || 'N/A';
+
+    // Photos
+    const idBox = document.getElementById('drawerIdPhotoBox');
+    if (app.id_front_photo_url && (app.id_front_photo_url.startsWith('http') || app.id_front_photo_url.startsWith('data:'))) {
+        idBox.innerHTML = `<a href="${app.id_front_photo_url}" target="_blank" title="Click to view full image"><img src="${app.id_front_photo_url}" class="w-full h-full object-cover rounded-lg" alt="Valid ID" /></a>`;
+    } else {
+        idBox.innerHTML = `<div class="text-center p-2 text-slate-400"><i class="fa-solid fa-id-card text-2xl mb-1"></i><span class="block text-[9px]">No photo uploaded</span></div>`;
+    }
+
+    const selfieBox = document.getElementById('drawerSelfiePhotoBox');
+    if (app.selfie_photo_url && (app.selfie_photo_url.startsWith('http') || app.selfie_photo_url.startsWith('data:'))) {
+        selfieBox.innerHTML = `<a href="${app.selfie_photo_url}" target="_blank" title="Click to view full image"><img src="${app.selfie_photo_url}" class="w-full h-full object-cover rounded-lg" alt="Selfie" /></a>`;
+    } else {
+        selfieBox.innerHTML = `<div class="text-center p-2 text-slate-400"><i class="fa-solid fa-camera text-2xl mb-1"></i><span class="block text-[9px]">No selfie uploaded</span></div>`;
+    }
 
     drawer.classList.remove('hidden');
     drawer.classList.add('flex');
 }
 
 function closePendingDrawer() {
-    activeAppId = null;
+    activeApp = null;
     document.querySelectorAll('.pending-app-row').forEach(r => {
         r.classList.remove('bg-blue-50/40', 'bg-blue-50/30');
     });
@@ -798,6 +795,90 @@ function closePendingDrawer() {
     if (drawer) {
         drawer.classList.add('hidden');
         drawer.classList.remove('flex');
+    }
+}
+
+async function handleApproveApplication() {
+    if (!activeApp) return;
+    if (!confirm(`Are you sure you want to APPROVE registration for ${activeApp.applicant}?`)) return;
+
+    const btn = document.getElementById('btnApproveApp');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Approving...';
+    }
+
+    try {
+        const res = await fetch('../../api/admin/review-citizen.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                verification_id: activeApp.raw_id,
+                citizen_user_id: activeApp.citizen_user_id,
+                action: 'approve',
+                reviewed_by: 'Admin'
+            })
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+            alert(`Success: ${activeApp.applicant} has been APPROVED.`);
+            location.reload();
+        } else {
+            alert('Error: ' + (result.message || 'Failed to approve application.'));
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Approve Registration</span>';
+            }
+        }
+    } catch (e) {
+        alert('Network error connecting to API');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Approve Registration</span>';
+        }
+    }
+}
+
+async function handleRejectApplication() {
+    if (!activeApp) return;
+    const reason = prompt(`Please enter the reason for REJECTING ${activeApp.applicant}:`, 'ID photo blurry or invalid credentials');
+    if (reason === null) return; // User cancelled
+
+    const btn = document.getElementById('btnRejectApp');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Rejecting...';
+    }
+
+    try {
+        const res = await fetch('../../api/admin/review-citizen.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                verification_id: activeApp.raw_id,
+                citizen_user_id: activeApp.citizen_user_id,
+                action: 'reject',
+                rejection_reason: reason,
+                reviewed_by: 'Admin'
+            })
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+            alert(`Application for ${activeApp.applicant} marked as REJECTED.`);
+            location.reload();
+        } else {
+            alert('Error: ' + (result.message || 'Failed to reject application.'));
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-xmark"></i> <span>Reject Registration</span>';
+            }
+        }
+    } catch (e) {
+        alert('Network error connecting to API');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-xmark"></i> <span>Reject Registration</span>';
+        }
     }
 }
 </script>
