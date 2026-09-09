@@ -782,17 +782,35 @@ function selectPendingApplication(rowElement) {
     document.getElementById('drawerValidIdType').textContent = app.valid_id_type || 'Valid ID';
     document.getElementById('drawerValidIdNumber').textContent = app.valid_id_number || 'N/A';
 
-    // Photos
+    // Photos Helper: support relative assets/, server uploads, data URIs, and full URLs
+    function formatPhotoSrc(url) {
+        if (!url || typeof url !== 'string') return null;
+        url = url.trim();
+        if (!url || url.startsWith('blob:')) return null;
+        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/')) {
+            return url;
+        }
+        if (url.startsWith('assets/')) {
+            return '../../' + url;
+        }
+        if (url.startsWith('/')) {
+            return url;
+        }
+        return '../../assets/uploads/verifications/' + url;
+    }
+
     const idBox = document.getElementById('drawerIdPhotoBox');
-    if (app.id_front_photo_url && (app.id_front_photo_url.startsWith('http') || app.id_front_photo_url.startsWith('data:'))) {
-        idBox.innerHTML = `<a href="${app.id_front_photo_url}" target="_blank" title="Click to view full image"><img src="${app.id_front_photo_url}" class="w-full h-full object-cover rounded-lg" alt="Valid ID" /></a>`;
+    const idSrc = formatPhotoSrc(app.id_front_photo_url);
+    if (idSrc) {
+        idBox.innerHTML = `<a href="${idSrc}" target="_blank" title="Click to view full image in new tab"><img src="${idSrc}" class="w-full h-full object-cover rounded-lg hover:opacity-90 transition cursor-pointer" alt="Valid ID" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'text-center p-2 text-slate-400\\'><i class=\\'fa-solid fa-id-card text-2xl mb-1\\'></i><span class=\\'block text-[9px]\\'>Image unavailable</span></div>';" /></a>`;
     } else {
         idBox.innerHTML = `<div class="text-center p-2 text-slate-400"><i class="fa-solid fa-id-card text-2xl mb-1"></i><span class="block text-[9px]">No photo uploaded</span></div>`;
     }
 
     const selfieBox = document.getElementById('drawerSelfiePhotoBox');
-    if (app.selfie_photo_url && (app.selfie_photo_url.startsWith('http') || app.selfie_photo_url.startsWith('data:'))) {
-        selfieBox.innerHTML = `<a href="${app.selfie_photo_url}" target="_blank" title="Click to view full image"><img src="${app.selfie_photo_url}" class="w-full h-full object-cover rounded-lg" alt="Selfie" /></a>`;
+    const selfieSrc = formatPhotoSrc(app.selfie_photo_url);
+    if (selfieSrc) {
+        selfieBox.innerHTML = `<a href="${selfieSrc}" target="_blank" title="Click to view full image in new tab"><img src="${selfieSrc}" class="w-full h-full object-cover rounded-lg hover:opacity-90 transition cursor-pointer" alt="Selfie" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'text-center p-2 text-slate-400\\'><i class=\\'fa-solid fa-camera text-2xl mb-1\\'></i><span class=\\'block text-[9px]\\'>Image unavailable</span></div>';" /></a>`;
     } else {
         selfieBox.innerHTML = `<div class="text-center p-2 text-slate-400"><i class="fa-solid fa-camera text-2xl mb-1"></i><span class="block text-[9px]">No selfie uploaded</span></div>`;
     }

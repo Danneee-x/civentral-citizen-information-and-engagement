@@ -216,6 +216,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn = getDbConnection();
         $pdo = $conn['pdo'];
 
+        // Helper to save base64 uploaded photos to server disk
+        if (!function_exists('saveBase64Image')) {
+            function saveBase64Image($dataUrl, $prefix = 'photo') {
+                if (empty($dataUrl)) return null;
+                $dataUrl = trim($dataUrl);
+
+                // If it's already an HTTP / relative file path, return as is
+                if (strpos($dataUrl, 'http://') === 0 || strpos($dataUrl, 'https://') === 0 || strpos($dataUrl, 'assets/') === 0) {
+                    return $dataUrl;
+                }
+
+                // Process base64 data URI
+                if (preg_match('/^data:image\/(\w+);base64,(.+)$/s', $dataUrl, $matches)) {
+                    $ext = strtolower($matches[1]);
+                    if ($ext === 'jpeg') $ext = 'jpg';
+                    $binary = base64_decode($matches[2]);
+                    if ($binary !== false) {
+                        $uploadDir = __DIR__ . '/../../assets/uploads/verifications';
+                        if (!is_dir($uploadDir)) {
+                            @mkdir($uploadDir, 0777, true);
+                        }
+                        $filename = $prefix . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+                        $filePath = $uploadDir . '/' . $filename;
+                        if (@file_put_contents($filePath, $binary) !== false) {
+                            return 'assets/uploads/verifications/' . $filename;
+                        }
+                    }
+                }
+
+                return $dataUrl;
+            }
+        }
+
+        $idFrontPhoto = saveBase64Image($data['id_front_photo_url'] ?? '', 'id_front');
+        $selfiePhoto  = saveBase64Image($data['selfie_photo_url'] ?? '', 'selfie');
+
         $stmt = $pdo->prepare("INSERT INTO `citizen_verifications` (
             `citizen_user_id`,
             `first_name`,
@@ -283,8 +319,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':years_resident'          => !empty($data['years_resident']) ? (int)$data['years_resident'] : 1,
             ':valid_id_type'           => !empty($data['valid_id_type']) ? $data['valid_id_type'] : 'PhilSys National ID',
             ':valid_id_number'         => trim($data['valid_id_number']),
-            ':id_front_photo_url'      => !empty($data['id_front_photo_url']) ? $data['id_front_photo_url'] : null,
-            ':selfie_photo_url'        => !empty($data['selfie_photo_url']) ? $data['selfie_photo_url'] : null,
+            ':id_front_photo_url'      => $idFrontPhoto,
+            ':selfie_photo_url'        => $selfiePhoto,
         ]);
 
         $insertedId = $pdo->lastInsertId();
