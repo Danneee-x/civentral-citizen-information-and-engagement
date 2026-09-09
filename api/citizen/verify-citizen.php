@@ -132,8 +132,28 @@ function getDbConnection() {
                 `id_front_photo_url` VARCHAR(500) NULL,
                 `selfie_photo_url` VARCHAR(500) NULL,
                 `verification_status` ENUM('Pending', 'Under_Review', 'Approved', 'Rejected') NOT NULL DEFAULT 'Pending',
+                `reviewed_by` VARCHAR(100) NULL,
+                `rejection_reason` TEXT NULL,
+                `reviewed_at` DATETIME NULL,
+                `is_duplicate` TINYINT(1) NOT NULL DEFAULT 0,
+                `duplicate_notes` TEXT NULL,
                 `submitted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+            // Self-healing columns
+            $cols = $pdo->query("SHOW COLUMNS FROM citizen_verifications")->fetchAll(PDO::FETCH_COLUMN);
+            $needed = [
+                'reviewed_by' => 'VARCHAR(100) NULL',
+                'rejection_reason' => 'TEXT NULL',
+                'reviewed_at' => 'DATETIME NULL',
+                'is_duplicate' => 'TINYINT(1) NOT NULL DEFAULT 0',
+                'duplicate_notes' => 'TEXT NULL'
+            ];
+            foreach ($needed as $col => $type) {
+                if (!in_array($col, $cols)) {
+                    $pdo->exec("ALTER TABLE citizen_verifications ADD COLUMN `$col` $type");
+                }
+            }
 
             return ['pdo' => $pdo, 'target' => $cand['desc'], 'host' => $cand['host']];
         } catch (\Exception $e) {

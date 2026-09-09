@@ -50,19 +50,34 @@ try {
         `submitted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
-    // Real Metrics Query
+    // Self-healing: verify all required columns exist
+    $cols = $pdo->query("SHOW COLUMNS FROM citizen_verifications")->fetchAll(PDO::FETCH_COLUMN);
+    $needed = [
+        'reviewed_by' => 'VARCHAR(100) NULL',
+        'rejection_reason' => 'TEXT NULL',
+        'reviewed_at' => 'DATETIME NULL',
+        'is_duplicate' => 'TINYINT(1) NOT NULL DEFAULT 0',
+        'duplicate_notes' => 'TEXT NULL'
+    ];
+    foreach ($needed as $col => $type) {
+        if (!in_array($col, $cols)) {
+            $pdo->exec("ALTER TABLE citizen_verifications ADD COLUMN `$col` $type");
+        }
+    }
+
+    // Real Metrics Query: ONLY Approved citizens are registered citizens
     $metricStmt = $pdo->query("SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN verification_status = 'Approved' THEN 1 ELSE 0 END) as active_count,
+        COUNT(*) as total_records,
+        SUM(CASE WHEN verification_status = 'Approved' THEN 1 ELSE 0 END) as approved_count,
         SUM(CASE WHEN verification_status = 'Approved' AND TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) >= 60 THEN 1 ELSE 0 END) as senior_count,
         SUM(CASE WHEN verification_status = 'Approved' AND civil_status IN ('Widowed', 'Separated', 'Divorced / Annulled', 'Common-Law / Live-In') THEN 1 ELSE 0 END) as solo_parent_count,
-        SUM(CASE WHEN verification_status = 'Pending' THEN 1 ELSE 0 END) as pending_count,
-        SUM(CASE WHEN DATE(submitted_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as new_regs_count
+        SUM(CASE WHEN verification_status IN ('Pending', 'Under_Review') THEN 1 ELSE 0 END) as pending_count,
+        SUM(CASE WHEN verification_status = 'Approved' AND DATE(COALESCE(reviewed_at, submitted_at)) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as new_regs_count
         FROM citizen_verifications");
     $stats = $metricStmt->fetch(PDO::FETCH_ASSOC);
 
-    $counts['total']       = (int)($stats['total'] ?? 0);
-    $counts['active']      = (int)($stats['active_count'] ?? 0);
+    $counts['total']       = (int)($stats['approved_count'] ?? 0);
+    $counts['active']      = (int)($stats['approved_count'] ?? 0);
     $counts['senior']      = (int)($stats['senior_count'] ?? 0);
     $counts['solo_parent'] = (int)($stats['solo_parent_count'] ?? 0);
     $counts['pending']     = (int)($stats['pending_count'] ?? 0);
@@ -70,8 +85,8 @@ try {
     $counts['pwd']         = 0;
     $counts['four_ps']     = 0;
 
-    // Fetch citizens (both Approved & Registered)
-    $stmt = $pdo->query("SELECT * FROM citizen_verifications ORDER BY submitted_at DESC LIMIT 100");
+    // Fetch ONLY Approved citizens for the Registered Citizens table
+    $stmt = $pdo->query("SELECT * FROM citizen_verifications WHERE verification_status = 'Approved' ORDER BY COALESCE(reviewed_at, submitted_at) DESC LIMIT 100");
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($rows as $r) {
@@ -87,16 +102,8 @@ try {
         $tags = [];
         if ($age >= 60) $tags[] = 'Senior Citizen';
         if (in_array($r['civil_status'], ['Widowed', 'Separated', 'Divorced / Annulled'])) $tags[] = 'Solo Parent';
-        if ($r['verification_status'] === 'Pending') $tags[] = 'Pending Validation';
 
-        $status = 'Active';
-        if ($r['verification_status'] === 'Pending') {
-            $status = 'Pending Validation';
-        } elseif ($r['verification_status'] === 'Rejected') {
-            $status = 'Inactive';
-        } elseif ($age >= 60) {
-            $status = 'Senior Citizen';
-        }
+        $status = ($age >= 60) ? 'Senior Citizen' : 'Active';
 
         $citizens[] = [
             'id' => 'CIZ-' . str_pad($r['verification_id'], 5, '0', STR_PAD_LEFT),
@@ -479,6 +486,19 @@ include '../../includes/sidebar.php';
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
+                            <?php if (empty($citizens)): ?>
+                            <tr>
+                                <td colspan="13" class="p-12 text-center text-slate-400">
+                                    <div class="flex flex-col items-center justify-center gap-2">
+                                        <div class="w-14 h-14 rounded-2xl bg-blue-50/60 border border-blue-100 flex items-center justify-center text-brand-dark mb-1">
+                                            <i class="fa-solid fa-users text-2xl text-blue-500"></i>
+                                        </div>
+                                        <p class="font-bold text-slate-700 text-sm">No Approved Citizens in Registry</p>
+                                        <p class="text-xs text-slate-400 max-w-md">New submissions from the citizen mobile app appear in <a href="pending-approvals.php" class="text-[#0f53d1] font-bold hover:underline">Pending Approvals</a>. Once verified and approved by staff, they will automatically be listed here as registered citizens.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php else: ?>
                             <?php foreach ($citizens as $index => $c): ?>
                             <tr onclick="toggleCitizenRow(event, this)" class="hover:bg-slate-50 transition cursor-pointer select-none" data-household="<?php echo htmlspecialchars($c['household']); ?>" data-district="<?php echo htmlspecialchars($c['district']); ?>" data-barangay="<?php echo htmlspecialchars($c['barangay']); ?>" data-sex="<?php echo htmlspecialchars($c['sex']); ?>" data-civil-status="<?php echo htmlspecialchars($c['civil_status']); ?>" data-age="<?php echo htmlspecialchars($c['age']); ?>" data-status="<?php echo htmlspecialchars($c['status']); ?>" data-tags="<?php echo htmlspecialchars(implode(',', $c['tags'])); ?>" data-date="<?php echo htmlspecialchars($c['date']); ?>">
                                 <td class="p-4 text-center">
@@ -509,6 +529,7 @@ include '../../includes/sidebar.php';
                                 </td>
                             </tr>
                             <?php endforeach; ?>
+                            <?php endif; ?>
                             <tr id="noCitizensRow" class="hidden">
                                 <td colspan="13" class="p-8 text-center text-slate-400 font-medium text-xs">
                                     <i class="fa-solid fa-users-slash text-2xl mb-2 block text-slate-300"></i>

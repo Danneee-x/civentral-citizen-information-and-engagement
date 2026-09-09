@@ -49,10 +49,25 @@ try {
         `submitted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
+    // Self-healing: verify all required columns exist
+    $cols = $pdo->query("SHOW COLUMNS FROM citizen_verifications")->fetchAll(PDO::FETCH_COLUMN);
+    $needed = [
+        'reviewed_by' => 'VARCHAR(100) NULL',
+        'rejection_reason' => 'TEXT NULL',
+        'reviewed_at' => 'DATETIME NULL',
+        'is_duplicate' => 'TINYINT(1) NOT NULL DEFAULT 0',
+        'duplicate_notes' => 'TEXT NULL'
+    ];
+    foreach ($needed as $col => $type) {
+        if (!in_array($col, $cols)) {
+            $pdo->exec("ALTER TABLE citizen_verifications ADD COLUMN `$col` $type");
+        }
+    }
+
     // Fetch counts
     $statsStmt = $pdo->query("SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN verification_status = 'Pending' THEN 1 ELSE 0 END) as pending,
+        COUNT(*) as total_all,
+        SUM(CASE WHEN verification_status IN ('Pending', 'Under_Review') THEN 1 ELSE 0 END) as pending,
         SUM(CASE WHEN verification_status = 'Approved' THEN 1 ELSE 0 END) as approved,
         SUM(CASE WHEN verification_status = 'Rejected' THEN 1 ELSE 0 END) as rejected,
         SUM(CASE WHEN verification_status = 'Approved' AND DATE(reviewed_at) = CURDATE() THEN 1 ELSE 0 END) as today_approved,
@@ -60,7 +75,7 @@ try {
         FROM citizen_verifications");
     $dbStats = $statsStmt->fetch(PDO::FETCH_ASSOC);
 
-    $counts['total']          = (int)($dbStats['total'] ?? 0);
+    $counts['total']          = (int)($dbStats['pending'] ?? 0);
     $counts['pending']        = (int)($dbStats['pending'] ?? 0);
     $counts['approved']       = (int)($dbStats['approved'] ?? 0);
     $counts['rejected']       = (int)($dbStats['rejected'] ?? 0);
@@ -68,8 +83,8 @@ try {
     $counts['today_approved'] = (int)($dbStats['today_approved'] ?? 0);
     $counts['today_rejected'] = (int)($dbStats['today_rejected'] ?? 0);
 
-    // Fetch real applications
-    $stmt = $pdo->query("SELECT * FROM citizen_verifications ORDER BY submitted_at DESC LIMIT 100");
+    // Fetch real applications that are currently in the Pending Approvals queue
+    $stmt = $pdo->query("SELECT * FROM citizen_verifications WHERE verification_status IN ('Pending', 'Under_Review') ORDER BY submitted_at DESC LIMIT 100");
     $dbRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($dbRows as $row) {
@@ -821,7 +836,7 @@ async function handleApproveApplication() {
         });
         const result = await res.json();
         if (result.status === 'success') {
-            alert(`Success: ${activeApp.applicant} has been APPROVED.`);
+            alert(`Success: ${activeApp.applicant} has been APPROVED and registered! You can view this record in Registered Citizens.`);
             location.reload();
         } else {
             alert('Error: ' + (result.message || 'Failed to approve application.'));
