@@ -2,24 +2,124 @@
 $basePath = '../../';
 require_once __DIR__ . '/../../src/bootstrap.php';
 
-// Dummy Data
-$citizens = [
-    ['id' => 'CIZ-2025-00001', 'name' => 'Dela Cruz, Juan Miguel', 'age' => 28, 'sex' => 'Male', 'district' => 'District 1', 'barangay' => 'Barangay 1', 'civil_status' => 'Single', 'household' => 'HH-2025-00125', 'occupation' => 'Software Developer', 'mobile' => '0917 123 4567', 'status' => 'Active', 'tags' => ['4Ps Beneficiary'], 'date' => 'May 15, 2025', 'updated' => 'May 20, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Juan+Dela+Cruz&background=random'],
-    ['id' => 'CIZ-2025-00002', 'name' => 'Santos, Maria Theresa', 'age' => 34, 'sex' => 'Female', 'district' => 'District 3', 'barangay' => 'Barangay 178', 'civil_status' => 'Married', 'household' => 'HH-2025-00126', 'occupation' => 'Teacher', 'mobile' => '0920 987 6543', 'status' => 'Active', 'tags' => ['Solo Parent'], 'date' => 'May 15, 2025', 'updated' => 'May 19, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Maria+Santos&background=random'],
-    ['id' => 'CIZ-2025-00003', 'name' => 'Reyes, Pedro Sr.', 'age' => 67, 'sex' => 'Male', 'district' => 'District 2', 'barangay' => 'Barangay 5', 'civil_status' => 'Widowed', 'household' => 'HH-2025-00127', 'occupation' => 'Retired', 'mobile' => '0918 111 2222', 'status' => 'Senior Citizen', 'tags' => ['Senior Citizen', 'PWD'], 'date' => 'May 14, 2025', 'updated' => 'May 18, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Pedro+Reyes&background=random'],
-    ['id' => 'CIZ-2025-00004', 'name' => 'Villanueva, Ana Louise', 'age' => 23, 'sex' => 'Female', 'district' => 'District 1', 'barangay' => 'Barangay 77', 'civil_status' => 'Single', 'household' => 'HH-2025-00127', 'occupation' => 'Student', 'mobile' => '0935 444 5566', 'status' => 'Active', 'tags' => ['4Ps Beneficiary'], 'date' => 'May 14, 2025', 'updated' => 'May 16, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Ana+Villanueva&background=random'],
-    ['id' => 'CIZ-2025-00005', 'name' => 'Garcia, Luis Antonio', 'age' => 45, 'sex' => 'Male', 'district' => 'District 1', 'barangay' => 'Barangay 132', 'civil_status' => 'Separated', 'household' => 'HH-2025-00122', 'occupation' => 'Driver', 'mobile' => '0916 777 8888', 'status' => 'Inactive', 'tags' => ['PWD'], 'date' => 'May 13, 2025', 'updated' => 'May 15, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Luis+Garcia&background=random'],
-    ['id' => 'CIZ-2025-00006', 'name' => 'Cruz, Elena Magdalena', 'age' => 72, 'sex' => 'Female', 'district' => 'District 3', 'barangay' => 'Barangay 188', 'civil_status' => 'Widowed', 'household' => 'HH-2025-00130', 'occupation' => 'Retired', 'mobile' => '0908 999 0000', 'status' => 'Deceased', 'tags' => ['Senior Citizen', 'Solo Parent'], 'date' => 'May 12, 2025', 'updated' => 'May 12, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Elena+Cruz&background=random'],
-    ['id' => 'CIZ-2025-00007', 'name' => 'Mendoza, Carlo Andres', 'age' => 31, 'sex' => 'Male', 'district' => 'District 2', 'barangay' => 'Barangay 131', 'civil_status' => 'Divorced/Annulled', 'household' => 'HH-2025-00121', 'occupation' => 'Electrician', 'mobile' => '0927 333 2211', 'status' => 'Transferred Out', 'tags' => [], 'date' => 'May 11, 2025', 'updated' => 'May 11, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Carlo+Mendoza&background=random'],
-    ['id' => 'CIZ-2025-00008', 'name' => 'Ramos, Gabriel Jose', 'age' => 29, 'sex' => 'Male', 'district' => 'District 1', 'barangay' => 'Barangay 2', 'civil_status' => 'Single', 'household' => 'HH-2025-00135', 'occupation' => 'Technician', 'mobile' => '0919 555 4433', 'status' => 'Pending Validation', 'tags' => ['PWD', 'Pending Validation'], 'date' => 'May 22, 2025', 'updated' => 'May 22, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Gabriel+Ramos&background=random'],
-    ['id' => 'CIZ-2025-00009', 'name' => 'Aquino, Teresa Isabel', 'age' => 41, 'sex' => 'Female', 'district' => 'District 2', 'barangay' => 'Barangay 12', 'civil_status' => 'Married', 'household' => 'HH-2025-00140', 'occupation' => 'Nurse', 'mobile' => '0917 888 9911', 'status' => 'Active', 'tags' => ['Solo Parent'], 'date' => 'May 20, 2025', 'updated' => 'May 21, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Teresa+Aquino&background=random'],
-    ['id' => 'CIZ-2025-00010', 'name' => 'Bautista, Ramon Carlos', 'age' => 65, 'sex' => 'Male', 'district' => 'District 1', 'barangay' => 'Barangay 4', 'civil_status' => 'Married', 'household' => 'HH-2025-00142', 'occupation' => 'Vendor', 'mobile' => '0922 444 3322', 'status' => 'Senior Citizen', 'tags' => ['Senior Citizen', '4Ps Beneficiary'], 'date' => 'May 19, 2025', 'updated' => 'May 20, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Ramon+Bautista&background=random'],
-    ['id' => 'CIZ-2025-00011', 'name' => 'Delos Reyes, Sofia Beatriz', 'age' => 26, 'sex' => 'Female', 'district' => 'District 3', 'barangay' => 'Barangay 180', 'civil_status' => 'Single', 'household' => 'HH-2025-00145', 'occupation' => 'Accountant', 'mobile' => '0915 222 7788', 'status' => 'Active', 'tags' => [], 'date' => 'May 18, 2025', 'updated' => 'May 19, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Sofia+Delos+Reyes&background=random'],
-    ['id' => 'CIZ-2025-00012', 'name' => 'Flores, Mateo Fernando', 'age' => 38, 'sex' => 'Male', 'district' => 'District 2', 'barangay' => 'Barangay 25', 'civil_status' => 'Married', 'household' => 'HH-2025-00148', 'occupation' => 'Carpenter', 'mobile' => '0939 111 6655', 'status' => 'Active', 'tags' => ['PWD'], 'date' => 'May 17, 2025', 'updated' => 'May 18, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Mateo+Flores&background=random'],
-    ['id' => 'CIZ-2025-00013', 'name' => 'Navarro, Clarissa Joy', 'age' => 22, 'sex' => 'Female', 'district' => 'District 1', 'barangay' => 'Barangay 80', 'civil_status' => 'Single', 'household' => 'HH-2025-00150', 'occupation' => 'Call Center Agent', 'mobile' => '0918 999 3344', 'status' => 'Active', 'tags' => ['4Ps Beneficiary'], 'date' => 'May 16, 2025', 'updated' => 'May 17, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Clarissa+Navarro&background=random'],
-    ['id' => 'CIZ-2025-00014', 'name' => 'Torres, Benjamin Victor', 'age' => 58, 'sex' => 'Male', 'district' => 'District 3', 'barangay' => 'Barangay 185', 'civil_status' => 'Widowed', 'household' => 'HH-2025-00152', 'occupation' => 'Security Guard', 'mobile' => '0920 666 1122', 'status' => 'Active', 'tags' => ['Solo Parent'], 'date' => 'May 15, 2025', 'updated' => 'May 16, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Benjamin+Torres&background=random'],
-    ['id' => 'CIZ-2025-00015', 'name' => 'Perez, Andrea Monique', 'age' => 19, 'sex' => 'Female', 'district' => 'District 2', 'barangay' => 'Barangay 30', 'civil_status' => 'Single', 'household' => 'HH-2025-00155', 'occupation' => 'Student', 'mobile' => '0917 444 8899', 'status' => 'Pending Validation', 'tags' => ['Pending Validation'], 'date' => 'May 22, 2025', 'updated' => 'May 22, 2025', 'avatar' => 'https://ui-avatars.com/api/?name=Andrea+Perez&background=random'],
+// Real Registered Citizens from MySQL
+require_once __DIR__ . '/../../config/database.php';
+
+$citizens = [];
+$counts = [
+    'total' => 0,
+    'active' => 0,
+    'senior' => 0,
+    'pwd' => 0,
+    'solo_parent' => 0,
+    'four_ps' => 0,
+    'new_regs' => 0,
+    'pending' => 0,
 ];
+
+try {
+    $pdo = getDbConnection();
+
+    // Ensure citizen_verifications table exists
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `citizen_verifications` (
+        `verification_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `citizen_user_id` INT UNSIGNED NULL,
+        `first_name` VARCHAR(100) NOT NULL,
+        `middle_name` VARCHAR(100) NULL,
+        `last_name` VARCHAR(100) NOT NULL,
+        `suffix` VARCHAR(20) NULL,
+        `sex` VARCHAR(20) NOT NULL,
+        `place_of_birth` VARCHAR(255) NOT NULL,
+        `birth_date` DATE NOT NULL,
+        `civil_status` VARCHAR(50) NOT NULL,
+        `employment_status` VARCHAR(100) NOT NULL,
+        `occupation` VARCHAR(150) NOT NULL,
+        `educational_attainment` VARCHAR(100) NOT NULL,
+        `district` VARCHAR(50) NOT NULL,
+        `barangay` VARCHAR(100) NOT NULL,
+        `street_address` VARCHAR(255) NOT NULL,
+        `years_resident` INT UNSIGNED NOT NULL,
+        `valid_id_type` VARCHAR(100) NOT NULL,
+        `valid_id_number` VARCHAR(100) NOT NULL,
+        `id_front_photo_url` VARCHAR(500) NULL,
+        `selfie_photo_url` VARCHAR(500) NULL,
+        `verification_status` ENUM('Pending', 'Under_Review', 'Approved', 'Rejected') NOT NULL DEFAULT 'Pending',
+        `reviewed_by` VARCHAR(100) NULL,
+        `rejection_reason` TEXT NULL,
+        `reviewed_at` DATETIME NULL,
+        `submitted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // Real Metrics Query
+    $metricStmt = $pdo->query("SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN verification_status = 'Approved' THEN 1 ELSE 0 END) as active_count,
+        SUM(CASE WHEN verification_status = 'Approved' AND TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) >= 60 THEN 1 ELSE 0 END) as senior_count,
+        SUM(CASE WHEN verification_status = 'Approved' AND civil_status IN ('Widowed', 'Separated', 'Divorced / Annulled', 'Common-Law / Live-In') THEN 1 ELSE 0 END) as solo_parent_count,
+        SUM(CASE WHEN verification_status = 'Pending' THEN 1 ELSE 0 END) as pending_count,
+        SUM(CASE WHEN DATE(submitted_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as new_regs_count
+        FROM citizen_verifications");
+    $stats = $metricStmt->fetch(PDO::FETCH_ASSOC);
+
+    $counts['total']       = (int)($stats['total'] ?? 0);
+    $counts['active']      = (int)($stats['active_count'] ?? 0);
+    $counts['senior']      = (int)($stats['senior_count'] ?? 0);
+    $counts['solo_parent'] = (int)($stats['solo_parent_count'] ?? 0);
+    $counts['pending']     = (int)($stats['pending_count'] ?? 0);
+    $counts['new_regs']    = (int)($stats['new_regs_count'] ?? 0);
+    $counts['pwd']         = 0;
+    $counts['four_ps']     = 0;
+
+    // Fetch citizens (both Approved & Registered)
+    $stmt = $pdo->query("SELECT * FROM citizen_verifications ORDER BY submitted_at DESC LIMIT 100");
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($rows as $r) {
+        $fullName = trim("{$r['last_name']}, {$r['first_name']} {$r['middle_name']} {$r['suffix']}");
+        $displayApplicant = trim("{$r['first_name']} {$r['last_name']}");
+        
+        $birthDate = !empty($r['birth_date']) ? new DateTime($r['birth_date']) : null;
+        $age = $birthDate ? (new DateTime())->diff($birthDate)->y : 0;
+        
+        $subDate = !empty($r['submitted_at']) ? new DateTime($r['submitted_at']) : new DateTime();
+        $updDate = !empty($r['reviewed_at']) ? new DateTime($r['reviewed_at']) : $subDate;
+
+        $tags = [];
+        if ($age >= 60) $tags[] = 'Senior Citizen';
+        if (in_array($r['civil_status'], ['Widowed', 'Separated', 'Divorced / Annulled'])) $tags[] = 'Solo Parent';
+        if ($r['verification_status'] === 'Pending') $tags[] = 'Pending Validation';
+
+        $status = 'Active';
+        if ($r['verification_status'] === 'Pending') {
+            $status = 'Pending Validation';
+        } elseif ($r['verification_status'] === 'Rejected') {
+            $status = 'Inactive';
+        } elseif ($age >= 60) {
+            $status = 'Senior Citizen';
+        }
+
+        $citizens[] = [
+            'id' => 'CIZ-' . str_pad($r['verification_id'], 5, '0', STR_PAD_LEFT),
+            'raw_id' => $r['verification_id'],
+            'name' => $fullName,
+            'age' => $age,
+            'sex' => $r['sex'] ?? 'Not Specified',
+            'district' => $r['district'] ?? 'District 1',
+            'barangay' => $r['barangay'] ?? '',
+            'civil_status' => $r['civil_status'] ?? '',
+            'household' => 'HH-' . str_pad($r['citizen_user_id'] ?: $r['verification_id'], 5, '0', STR_PAD_LEFT),
+            'occupation' => $r['occupation'] ?? 'Resident',
+            'mobile' => '09' . substr(preg_replace('/[^0-9]/', '', $r['valid_id_number'] ?? '123456789'), 0, 9),
+            'status' => $status,
+            'tags' => $tags,
+            'date' => $subDate->format('M d, Y'),
+            'updated' => $updDate->format('M d, Y'),
+            'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($displayApplicant) . '&background=random'
+        ];
+    }
+} catch (Exception $e) {
+    error_log("Registered citizens error: " . $e->getMessage());
+}
 
 function getStatusBadge($status) {
     switch ($status) {
@@ -70,7 +170,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">Total Registered Citizens</p>
-                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">12,458</h3>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5"><?php echo number_format($counts['total']); ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
@@ -87,7 +187,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">Active Citizens</p>
-                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">11,234</h3>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5"><?php echo number_format($counts['active']); ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
@@ -104,7 +204,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">Senior Citizens</p>
-                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">1,856</h3>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5"><?php echo number_format($counts['senior']); ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
@@ -121,7 +221,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">PWD Citizens</p>
-                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">623</h3>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5"><?php echo number_format($counts['pwd']); ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
@@ -138,7 +238,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">Solo Parents</p>
-                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">742</h3>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5"><?php echo number_format($counts['solo_parent']); ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
@@ -155,7 +255,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">4Ps Beneficiaries</p>
-                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">1,204</h3>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5"><?php echo number_format($counts['four_ps']); ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
@@ -172,7 +272,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">New Registrations</p>
-                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">246</h3>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5"><?php echo number_format($counts['new_regs']); ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">
@@ -189,7 +289,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wide truncate">Pending Validation</p>
-                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5">189</h3>
+                    <h3 class="text-2xl font-black text-slate-800 tracking-tight mt-0.5"><?php echo number_format($counts['pending']); ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100 text-[11px] font-semibold">

@@ -5,57 +5,102 @@ require_once __DIR__ . '/../../src/bootstrap.php';
 include '../../includes/header.php';
 include '../../includes/sidebar.php';
 
-// ID Verification Audit Logs Dataset (Read-Only Historical Record)
-$verificationLogs = [
-    [
-        'log_id' => 'VLOG-2025-0981',
-        'citizen_name' => 'Juan Dela Cruz',
-        'citizen_id' => 'CTZ-2025-0142',
-        'address' => 'Barangay 178, Camarin, Caloocan City',
-        'id_type' => 'PhilSys National ID',
-        'verifying_staff' => 'Desk Officer Liza Dy',
-        'timestamp' => 'Jun 8, 2025 • 09:30 AM',
-        'result' => 'Verified',
-        'result_badge' => 'bg-emerald-50 text-emerald-600 border-emerald-200',
-        'remarks' => 'PhilSys QR code scanned & verified via Philippine Identification System API. Demographics match 100%.'
-    ],
-    [
-        'log_id' => 'VLOG-2025-0982',
-        'citizen_name' => 'Maria Santos',
-        'citizen_id' => 'CTZ-2025-0189',
-        'address' => 'Barangay 176, Bagong Silang, Caloocan City',
-        'id_type' => 'Voter\'s ID (COMELEC)',
-        'verifying_staff' => 'Staff John Cruz',
-        'timestamp' => 'Jun 8, 2025 • 10:15 AM',
-        'result' => 'Verified',
-        'result_badge' => 'bg-emerald-50 text-emerald-600 border-emerald-200',
-        'remarks' => 'Voter precinct record confirmed in District 1 COMELEC database. Proof of residency validated.'
-    ],
-    [
-        'log_id' => 'VLOG-2025-0983',
-        'citizen_name' => 'Roderick Lim',
-        'citizen_id' => 'CTZ-2025-0412',
-        'address' => 'Barangay 88, Caloocan City',
-        'id_type' => 'Driver\'s License (LTO)',
-        'verifying_staff' => 'Desk Officer Liza Dy',
-        'timestamp' => 'Jun 7, 2025 • 02:45 PM',
-        'result' => 'Flagged',
-        'result_badge' => 'bg-amber-50 text-amber-600 border-amber-200',
-        'remarks' => 'Middle name discrepancy detected between LTO license and birth certificate. Sent to supervisor for review.'
-    ],
-    [
-        'log_id' => 'VLOG-2025-0984',
-        'citizen_name' => 'Renato Reyes',
-        'citizen_id' => 'CTZ-2025-0501',
-        'address' => 'Barangay 12, Caloocan City',
-        'id_type' => 'Barangay ID (Expired)',
-        'verifying_staff' => 'Staff John Cruz',
-        'timestamp' => 'Jun 6, 2025 • 11:20 AM',
-        'result' => 'Failed',
-        'result_badge' => 'bg-rose-50 text-rose-600 border-rose-200',
-        'remarks' => 'Document submitted is expired (>2 years). Requested applicant to re-upload valid government ID.'
-    ]
+// Real ID Verification Audit Logs from MySQL
+require_once __DIR__ . '/../../config/database.php';
+
+$verificationLogs = [];
+$counts = [
+    'total' => 0,
+    'passed' => 0,
+    'pending' => 0,
+    'failed' => 0,
+    'passed_pct' => 0
 ];
+
+try {
+    $pdo = getDbConnection();
+
+    // Ensure citizen_verifications table exists
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `citizen_verifications` (
+        `verification_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `citizen_user_id` INT UNSIGNED NULL,
+        `first_name` VARCHAR(100) NOT NULL,
+        `middle_name` VARCHAR(100) NULL,
+        `last_name` VARCHAR(100) NOT NULL,
+        `suffix` VARCHAR(20) NULL,
+        `sex` VARCHAR(20) NOT NULL,
+        `place_of_birth` VARCHAR(255) NOT NULL,
+        `birth_date` DATE NOT NULL,
+        `civil_status` VARCHAR(50) NOT NULL,
+        `employment_status` VARCHAR(100) NOT NULL,
+        `occupation` VARCHAR(150) NOT NULL,
+        `educational_attainment` VARCHAR(100) NOT NULL,
+        `district` VARCHAR(50) NOT NULL,
+        `barangay` VARCHAR(100) NOT NULL,
+        `street_address` VARCHAR(255) NOT NULL,
+        `years_resident` INT UNSIGNED NOT NULL,
+        `valid_id_type` VARCHAR(100) NOT NULL,
+        `valid_id_number` VARCHAR(100) NOT NULL,
+        `id_front_photo_url` VARCHAR(500) NULL,
+        `selfie_photo_url` VARCHAR(500) NULL,
+        `verification_status` ENUM('Pending', 'Under_Review', 'Approved', 'Rejected') NOT NULL DEFAULT 'Pending',
+        `reviewed_by` VARCHAR(100) NULL,
+        `rejection_reason` TEXT NULL,
+        `reviewed_at` DATETIME NULL,
+        `submitted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    $statsStmt = $pdo->query("SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN verification_status = 'Approved' THEN 1 ELSE 0 END) as passed,
+        SUM(CASE WHEN verification_status = 'Pending' THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN verification_status = 'Rejected' THEN 1 ELSE 0 END) as failed
+        FROM citizen_verifications");
+    $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+
+    $counts['total']   = (int)($stats['total'] ?? 0);
+    $counts['passed']  = (int)($stats['passed'] ?? 0);
+    $counts['pending'] = (int)($stats['pending'] ?? 0);
+    $counts['failed']  = (int)($stats['failed'] ?? 0);
+    $counts['passed_pct'] = $counts['total'] > 0 ? round(($counts['passed'] / $counts['total']) * 100, 1) : 0;
+
+    $stmt = $pdo->query("SELECT * FROM citizen_verifications ORDER BY COALESCE(reviewed_at, submitted_at) DESC LIMIT 100");
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($rows as $r) {
+        $fullName = trim("{$r['first_name']} {$r['middle_name']} {$r['last_name']} {$r['suffix']}");
+        $dt = !empty($r['reviewed_at']) ? new DateTime($r['reviewed_at']) : new DateTime($r['submitted_at']);
+        
+        $result = 'Under Review';
+        $badge = 'bg-amber-50 text-amber-600 border-amber-200';
+        $remarks = 'Pending administrative review and biometric verification against city civil registry.';
+
+        if ($r['verification_status'] === 'Approved') {
+            $result = 'Verified';
+            $badge = 'bg-emerald-50 text-emerald-600 border-emerald-200';
+            $remarks = "{$r['valid_id_type']} ({$r['valid_id_number']}) verified. Personal credentials and photo match confirmed.";
+        } elseif ($r['verification_status'] === 'Rejected') {
+            $result = 'Failed';
+            $badge = 'bg-rose-50 text-rose-600 border-rose-200';
+            $remarks = !empty($r['rejection_reason']) ? $r['rejection_reason'] : 'Discrepancy detected during validation.';
+        }
+
+        $verificationLogs[] = [
+            'log_id' => 'VLOG-' . str_pad($r['verification_id'], 4, '0', STR_PAD_LEFT),
+            'citizen_name' => $fullName,
+            'citizen_id' => 'CTZ-' . str_pad($r['verification_id'], 4, '0', STR_PAD_LEFT),
+            'address' => "{$r['barangay']}, {$r['district']}, Caloocan City",
+            'id_type' => $r['valid_id_type'] ?: 'National ID',
+            'verifying_staff' => !empty($r['reviewed_by']) ? $r['reviewed_by'] : 'Staff Reviewer',
+            'timestamp' => $dt->format('M j, Y • h:i A'),
+            'result' => $result,
+            'result_badge' => $badge,
+            'remarks' => $remarks
+        ];
+    }
+} catch (Exception $e) {
+    error_log("Verification logs error: " . $e->getMessage());
+}
 ?>
 
 <style>
@@ -110,7 +155,7 @@ $verificationLogs = [
                 </div>
             </div>
             <div>
-                <h3 class="text-2xl font-black text-slate-900 tracking-tight">1,842 Checks</h3>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo number_format($counts['total']); ?> Checks</h3>
                 <p class="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
                     <i class="fa-solid fa-lock"></i>
                     <span>Read-only append-only integrity</span>
@@ -127,7 +172,7 @@ $verificationLogs = [
                 </div>
             </div>
             <div>
-                <h3 class="text-2xl font-black text-slate-900 tracking-tight">1,780 (96.6%)</h3>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo number_format($counts['passed']); ?> (<?php echo $counts['passed_pct']; ?>%)</h3>
                 <p class="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
                     <i class="fa-solid fa-check"></i>
                     <span>PhilSys / Government ID verified</span>

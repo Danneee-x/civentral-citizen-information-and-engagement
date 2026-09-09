@@ -5,59 +5,100 @@ require_once __DIR__ . '/../../src/bootstrap.php';
 include '../../includes/header.php';
 include '../../includes/sidebar.php';
 
-// Duplicate Flags Dataset with Side-by-Side Records
-$duplicateFlags = [
-    [
-        'flag_id' => 'DUP-2025-0012',
-        'matching_criteria' => 'Same Full Name + Birthdate Match',
-        'match_confidence' => 98,
-        'status' => 'Pending Review',
-        'status_badge' => 'bg-amber-50 text-amber-600 border-amber-200',
-        'record_a' => [
-            'id' => 'CTZ-2025-0142',
-            'name' => 'Juan Dela Cruz',
-            'dob' => 'Jan 15, 1990',
-            'address' => 'Barangay 178, Camarin, Caloocan City',
-            'contact' => '0917 123 4567',
-            'civil_status' => 'Single',
-            'registered_date' => 'May 10, 2025'
-        ],
-        'record_b' => [
-            'id' => 'CTZ-2025-0589',
-            'name' => 'Juan V. Dela Cruz',
-            'dob' => 'Jan 15, 1990',
-            'address' => 'Phase 2, Camarin, Barangay 178, Caloocan City',
-            'contact' => '0917 123 4567',
-            'civil_status' => 'Single',
-            'registered_date' => 'Jun 7, 2025'
-        ]
-    ],
-    [
-        'flag_id' => 'DUP-2025-0013',
-        'matching_criteria' => 'Same Name + Address Match',
-        'match_confidence' => 91,
-        'status' => 'Pending Review',
-        'status_badge' => 'bg-amber-50 text-amber-600 border-amber-200',
-        'record_a' => [
-            'id' => 'CTZ-2025-0189',
-            'name' => 'Maria Santos',
-            'dob' => 'Mar 22, 1985',
-            'address' => 'Barangay 176, Bagong Silang, Caloocan City',
-            'contact' => '0918 987 6543',
-            'civil_status' => 'Married',
-            'registered_date' => 'Apr 12, 2025'
-        ],
-        'record_b' => [
-            'id' => 'CTZ-2025-0610',
-            'name' => 'Maria A. Santos',
-            'dob' => 'Mar 22, 1985',
-            'address' => 'Bagong Silang, Barangay 176, Caloocan City',
-            'contact' => '0918 987 6543',
-            'civil_status' => 'Married',
-            'registered_date' => 'Jun 8, 2025'
-        ]
-    ]
+// Real Duplicate Detection Query from MySQL
+require_once __DIR__ . '/../../config/database.php';
+
+$duplicateFlags = [];
+$counts = [
+    'pending' => 0,
+    'resolved' => 0,
+    'id_mismatches' => 0,
+    'verified_clean' => 0
 ];
+
+try {
+    $pdo = getDbConnection();
+
+    // Ensure table exists
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `citizen_verifications` (
+        `verification_id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `citizen_user_id` INT UNSIGNED NULL,
+        `first_name` VARCHAR(100) NOT NULL,
+        `middle_name` VARCHAR(100) NULL,
+        `last_name` VARCHAR(100) NOT NULL,
+        `suffix` VARCHAR(20) NULL,
+        `sex` VARCHAR(20) NOT NULL,
+        `place_of_birth` VARCHAR(255) NOT NULL,
+        `birth_date` DATE NOT NULL,
+        `civil_status` VARCHAR(50) NOT NULL,
+        `employment_status` VARCHAR(100) NOT NULL,
+        `occupation` VARCHAR(150) NOT NULL,
+        `educational_attainment` VARCHAR(100) NOT NULL,
+        `district` VARCHAR(50) NOT NULL,
+        `barangay` VARCHAR(100) NOT NULL,
+        `street_address` VARCHAR(255) NOT NULL,
+        `years_resident` INT UNSIGNED NOT NULL,
+        `valid_id_type` VARCHAR(100) NOT NULL,
+        `valid_id_number` VARCHAR(100) NOT NULL,
+        `id_front_photo_url` VARCHAR(500) NULL,
+        `selfie_photo_url` VARCHAR(500) NULL,
+        `verification_status` ENUM('Pending', 'Under_Review', 'Approved', 'Rejected') NOT NULL DEFAULT 'Pending',
+        `reviewed_by` VARCHAR(100) NULL,
+        `rejection_reason` TEXT NULL,
+        `reviewed_at` DATETIME NULL,
+        `submitted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // Search for duplicate ID numbers or matching demographics
+    $dupQuery = $pdo->query("SELECT v1.*, v2.verification_id as v2_id, v2.first_name as v2_fn, v2.last_name as v2_ln, 
+                                    v2.birth_date as v2_dob, v2.street_address as v2_addr, v2.barangay as v2_brgy, 
+                                    v2.valid_id_number as v2_idnum, v2.submitted_at as v2_sub, v2.civil_status as v2_cs
+                             FROM citizen_verifications v1
+                             JOIN citizen_verifications v2 
+                               ON v1.verification_id < v2.verification_id 
+                              AND (v1.valid_id_number = v2.valid_id_number 
+                                   OR (v1.first_name = v2.first_name AND v1.last_name = v2.last_name AND v1.birth_date = v2.birth_date))
+                             LIMIT 20");
+    $dupRows = $dupQuery->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($dupRows as $idx => $d) {
+        $nameA = trim("{$d['first_name']} {$d['last_name']}");
+        $nameB = trim("{$d['v2_fn']} {$d['v2_ln']}");
+        $isIdMatch = ($d['valid_id_number'] === $d['v2_idnum']);
+
+        $duplicateFlags[] = [
+            'flag_id' => 'DUP-' . date('Y') . '-' . str_pad($idx + 1, 4, '0', STR_PAD_LEFT),
+            'matching_criteria' => $isIdMatch ? 'Same Government ID Number' : 'Same Name + Birthdate Match',
+            'match_confidence' => $isIdMatch ? 100 : 95,
+            'status' => 'Pending Review',
+            'status_badge' => 'bg-amber-50 text-amber-600 border-amber-200',
+            'record_a' => [
+                'id' => 'CTZ-' . str_pad($d['verification_id'], 4, '0', STR_PAD_LEFT),
+                'name' => $nameA,
+                'dob' => !empty($d['birth_date']) ? date('M j, Y', strtotime($d['birth_date'])) : 'N/A',
+                'address' => "{$d['street_address']}, {$d['barangay']}, Caloocan City",
+                'contact' => $d['valid_id_number'],
+                'civil_status' => $d['civil_status'],
+                'registered_date' => date('M j, Y', strtotime($d['submitted_at']))
+            ],
+            'record_b' => [
+                'id' => 'CTZ-' . str_pad($d['v2_id'], 4, '0', STR_PAD_LEFT),
+                'name' => $nameB,
+                'dob' => !empty($d['v2_dob']) ? date('M j, Y', strtotime($d['v2_dob'])) : 'N/A',
+                'address' => "{$d['v2_addr']}, {$d['v2_brgy']}, Caloocan City",
+                'contact' => $d['v2_idnum'],
+                'civil_status' => $d['v2_cs'],
+                'registered_date' => date('M j, Y', strtotime($d['v2_sub']))
+            ]
+        ];
+    }
+
+    $counts['pending'] = count($duplicateFlags);
+    $totalCitizens = (int)$pdo->query("SELECT COUNT(*) FROM citizen_verifications")->fetchColumn();
+    $counts['verified_clean'] = max(0, $totalCitizens - (count($duplicateFlags) * 2));
+} catch (Exception $e) {
+    error_log("Duplicate flags error: " . $e->getMessage());
+}
 ?>
 
 <style>
@@ -112,7 +153,7 @@ $duplicateFlags = [
                 </div>
             </div>
             <div>
-                <h3 class="text-2xl font-black text-slate-900 tracking-tight">2 Flagged Pairs</h3>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo $counts['pending']; ?> Flagged Pairs</h3>
                 <p class="text-[11px] font-semibold text-amber-600 flex items-center gap-1 mt-1">
                     <i class="fa-solid fa-clock"></i>
                     <span>Requires staff resolution</span>
