@@ -70,8 +70,11 @@ try {
         SUM(CASE WHEN verification_status IN ('Pending', 'Under_Review') THEN 1 ELSE 0 END) as pending,
         SUM(CASE WHEN verification_status = 'Approved' THEN 1 ELSE 0 END) as approved,
         SUM(CASE WHEN verification_status = 'Rejected' THEN 1 ELSE 0 END) as rejected,
+        SUM(CASE WHEN verification_status = 'Under_Review' THEN 1 ELSE 0 END) as under_review,
+        SUM(CASE WHEN reviewed_by IS NOT NULL AND reviewed_by != '' AND reviewed_by != 'Unassigned' AND verification_status IN ('Pending', 'Under_Review') THEN 1 ELSE 0 END) as assigned_to_me,
         SUM(CASE WHEN verification_status = 'Approved' AND DATE(reviewed_at) = CURDATE() THEN 1 ELSE 0 END) as today_approved,
-        SUM(CASE WHEN verification_status = 'Rejected' AND DATE(reviewed_at) = CURDATE() THEN 1 ELSE 0 END) as today_rejected
+        SUM(CASE WHEN verification_status = 'Rejected' AND DATE(reviewed_at) = CURDATE() THEN 1 ELSE 0 END) as today_rejected,
+        AVG(CASE WHEN reviewed_at IS NOT NULL AND submitted_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, submitted_at, reviewed_at) ELSE NULL END) as avg_proc_minutes
         FROM citizen_verifications");
     $dbStats = $statsStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -79,9 +82,22 @@ try {
     $counts['pending']        = (int)($dbStats['pending'] ?? 0);
     $counts['approved']       = (int)($dbStats['approved'] ?? 0);
     $counts['rejected']       = (int)($dbStats['rejected'] ?? 0);
+    $counts['under_review']   = (int)($dbStats['under_review'] ?? 0);
+    $counts['assigned_to_me'] = (int)($dbStats['assigned_to_me'] ?? 0);
     $counts['awaiting']       = $counts['pending'];
     $counts['today_approved'] = (int)($dbStats['today_approved'] ?? 0);
     $counts['today_rejected'] = (int)($dbStats['today_rejected'] ?? 0);
+
+    $avgMinutes = (float)($dbStats['avg_proc_minutes'] ?? 0);
+    if ($avgMinutes <= 0) {
+        $avgProcessingTimeDisplay = '< 1 <span class="text-xs font-normal">hr</span>';
+    } elseif ($avgMinutes < 60) {
+        $avgProcessingTimeDisplay = round($avgMinutes) . ' <span class="text-xs font-normal">mins</span>';
+    } elseif ($avgMinutes < 1440) {
+        $avgProcessingTimeDisplay = round($avgMinutes / 60, 1) . ' <span class="text-xs font-normal">hrs</span>';
+    } else {
+        $avgProcessingTimeDisplay = round($avgMinutes / 1440, 1) . ' <span class="text-xs font-normal">days</span>';
+    }
 
     // Fetch real applications that are currently in the Pending Approvals queue
     $stmt = $pdo->query("SELECT * FROM citizen_verifications WHERE verification_status IN ('Pending', 'Under_Review') ORDER BY submitted_at DESC LIMIT 100");
@@ -176,18 +192,18 @@ include '../../includes/sidebar.php';
     </div>
     <div class="flex flex-col sm:flex-row sm:items-center justify-end gap-4 mb-6">
         <div class="flex items-center gap-2 flex-wrap">
-            <button class="px-3.5 py-2 text-xs font-bold text-[#0f53d1] bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 shadow-xs">
-                <i class="fa-solid fa-rotate text-[11px]"></i>
+            <button onclick="refreshQueue()" class="px-3.5 py-2 text-xs font-bold text-[#0f53d1] bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 shadow-xs">
+                <i id="refreshQueueIcon" class="fa-solid fa-rotate text-[11px]"></i>
                 <span>Refresh Queue</span>
             </button>
-            <button class="px-3.5 py-2 text-xs font-bold text-[#0f53d1] bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 shadow-xs">
+            <button onclick="exportPendingListCSV()" class="px-3.5 py-2 text-xs font-bold text-[#0f53d1] bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 shadow-xs">
                 <i class="fa-solid fa-upload text-[11px]"></i>
                 <span>Export Pending List</span>
             </button>
-            <button class="px-3.5 py-2 text-xs font-bold text-[#0f53d1] bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 shadow-xs">
+            <a href="id-verification-logs.php" class="px-3.5 py-2 text-xs font-bold text-[#0f53d1] bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer flex items-center gap-2 shadow-xs">
                 <i class="fa-regular fa-clock text-[11px]"></i>
                 <span>View Approval History</span>
-            </button>
+            </a>
         </div>
     </div>
 
@@ -233,7 +249,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div>
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide leading-tight">Assigned<br>to Me</p>
-                    <h3 class="text-lg font-black text-slate-800 mt-0.5">7</h3>
+                    <h3 class="text-lg font-black text-slate-800 mt-0.5"><?php echo $counts['assigned_to_me']; ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1 mt-2 text-[9px] font-semibold text-red-500">
@@ -281,7 +297,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div>
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide leading-tight">Requesting More<br>Information</p>
-                    <h3 class="text-lg font-black text-slate-800 mt-0.5">5</h3>
+                    <h3 class="text-lg font-black text-slate-800 mt-0.5"><?php echo $counts['under_review']; ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1 mt-2 text-[9px] font-semibold text-red-500">
@@ -297,7 +313,7 @@ include '../../includes/sidebar.php';
                 </div>
                 <div>
                     <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide leading-tight">Avg. Processing<br>Time</p>
-                    <h3 class="text-lg font-black text-slate-800 mt-0.5">2.4 <span class="text-xs font-normal">days</span></h3>
+                    <h3 class="text-lg font-black text-slate-800 mt-0.5"><?php echo $avgProcessingTimeDisplay; ?></h3>
                 </div>
             </div>
             <div class="flex items-center gap-1 mt-2 text-[9px] font-semibold text-red-500">
@@ -829,6 +845,69 @@ function closePendingDrawer() {
         drawer.classList.add('hidden');
         drawer.classList.remove('flex');
     }
+}
+
+function refreshQueue() {
+    const icon = document.getElementById('refreshQueueIcon');
+    if (icon) icon.classList.add('fa-spin');
+    setTimeout(() => {
+        window.location.reload();
+    }, 350);
+}
+
+function exportPendingListCSV() {
+    if (!applications || applications.length === 0) {
+        alert('No pending applications in the queue to export.');
+        return;
+    }
+
+    const headers = [
+        'Application ID',
+        'Applicant Name',
+        'Sex',
+        'Birth Date',
+        'Civil Status',
+        'Occupation',
+        'District',
+        'Barangay',
+        'Street Address',
+        'Years Resident',
+        'Valid ID Type',
+        'Valid ID Number',
+        'Status',
+        'Submission Date',
+        'Reviewer'
+    ];
+
+    const rows = applications.map(app => [
+        `"${app.id}"`,
+        `"${(app.applicant || '').replace(/"/g, '""')}"`,
+        `"${app.sex || ''}"`,
+        `"${app.birth_date || ''}"`,
+        `"${app.civil_status || ''}"`,
+        `"${(app.occupation || '').replace(/"/g, '""')}"`,
+        `"${app.district || ''}"`,
+        `"${app.barangay || ''}"`,
+        `"${(app.street_address || '').replace(/"/g, '""')}"`,
+        `"${app.years_resident || ''}"`,
+        `"${(app.valid_id_type || '').replace(/"/g, '""')}"`,
+        `"${(app.valid_id_number || '').replace(/"/g, '""')}"`,
+        `"${app.status || ''}"`,
+        `"${app.date} ${app.time}"`,
+        `"${app.reviewer || ''}"`
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+        + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const today = new Date().toISOString().slice(0, 10);
+    link.setAttribute("download", `pending_approvals_${today}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 async function handleApproveApplication() {

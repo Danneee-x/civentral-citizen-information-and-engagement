@@ -128,6 +128,85 @@ try {
     error_log("Registered citizens error: " . $e->getMessage());
 }
 
+    // Quick Statistics from live DB
+    $quickStatsStmt = $pdo->query("SELECT 
+        COUNT(*) as total_records,
+        SUM(CASE WHEN verification_status = 'Approved' THEN 1 ELSE 0 END) as approved_count,
+        SUM(CASE WHEN verification_status = 'Approved' AND sex = 'Male' THEN 1 ELSE 0 END) as male_count,
+        SUM(CASE WHEN verification_status = 'Approved' AND sex = 'Female' THEN 1 ELSE 0 END) as female_count,
+        AVG(CASE WHEN verification_status = 'Approved' AND birth_date IS NOT NULL AND birth_date != '0000-00-00' THEN TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) ELSE NULL END) as avg_age,
+        COUNT(DISTINCT CASE WHEN verification_status = 'Approved' AND street_address IS NOT NULL AND street_address != '' THEN street_address ELSE NULL END) as households,
+        SUM(CASE WHEN is_duplicate = 1 THEN 1 ELSE 0 END) as duplicates
+        FROM citizen_verifications");
+    $dbQuickStats = $quickStatsStmt->fetch(PDO::FETCH_ASSOC);
+
+    $avgAge = !empty($dbQuickStats['avg_age']) ? round((float)$dbQuickStats['avg_age'], 1) : 0;
+    $avgAgeDisplay = $avgAge > 0 ? "{$avgAge} years" : "N/A";
+
+    $approvedTotal = (int)($dbQuickStats['approved_count'] ?? 0);
+    $males = (int)($dbQuickStats['male_count'] ?? 0);
+    $females = (int)($dbQuickStats['female_count'] ?? 0);
+    if ($approvedTotal > 0 && ($males + $females) > 0) {
+        $genderTotal = $males + $females;
+        $mPct = round(($males / $genderTotal) * 100);
+        $fPct = 100 - $mPct;
+        $genderRatioDisplay = "{$mPct}% : {$fPct}%";
+    } else {
+        $genderRatioDisplay = "50% : 50%";
+    }
+
+    $totalHouseholds = (int)($dbQuickStats['households'] ?? 0);
+    if ($totalHouseholds === 0 && $approvedTotal > 0) {
+        $totalHouseholds = $approvedTotal;
+    }
+    $householdsDisplay = number_format($totalHouseholds > 0 ? $totalHouseholds : 1);
+
+    $totalAll = (int)($dbQuickStats['total_records'] ?? 0);
+    $duplicates = (int)($dbQuickStats['duplicates'] ?? 0);
+    if ($totalAll > 0) {
+        $accuracy = round((($totalAll - $duplicates) / $totalAll) * 100, 1);
+        $accuracyDisplay = "{$accuracy}%";
+    } else {
+        $accuracyDisplay = "100%";
+    }
+
+    // Recently Registered Citizens (Approved)
+    $recentRegStmt = $pdo->query("SELECT verification_id, first_name, last_name, district, barangay, reviewed_at, submitted_at, selfie_photo_url 
+        FROM citizen_verifications 
+        WHERE verification_status = 'Approved' 
+        ORDER BY COALESCE(reviewed_at, submitted_at) DESC 
+        LIMIT 4");
+    $recentlyRegisteredList = $recentRegStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Recent Activities (Latest events from verification lifecycle)
+    $actStmt = $pdo->query("SELECT 
+        verification_id, first_name, last_name, verification_status, reviewed_by, reviewed_at, submitted_at,
+        CASE 
+            WHEN reviewed_at IS NOT NULL AND verification_status = 'Approved' THEN reviewed_at
+            WHEN reviewed_at IS NOT NULL AND verification_status = 'Rejected' THEN reviewed_at
+            ELSE submitted_at
+        END AS activity_time,
+        CASE 
+            WHEN reviewed_at IS NOT NULL AND verification_status = 'Approved' THEN 'approved'
+            WHEN reviewed_at IS NOT NULL AND verification_status = 'Rejected' THEN 'rejected'
+            ELSE 'submitted'
+        END AS activity_type
+        FROM citizen_verifications
+        ORDER BY activity_time DESC
+        LIMIT 4");
+    $recentActivitiesList = $actStmt->fetchAll(PDO::FETCH_ASSOC);
+
+function getRelativeTimeStr($datetime) {
+    if (empty($datetime)) return 'Recently';
+    $time = strtotime($datetime);
+    $diff = time() - $time;
+    if ($diff < 60) return 'Just now';
+    if ($diff < 3600) return round($diff / 60) . ' mins ago';
+    if ($diff < 86400) return round($diff / 3600) . ' hour' . (round($diff / 3600) > 1 ? 's' : '') . ' ago';
+    if ($diff < 172800) return 'Yesterday';
+    return date('M d, Y', $time);
+}
+
 function getStatusBadge($status) {
     switch ($status) {
         case 'Active': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
@@ -595,38 +674,41 @@ include '../../includes/sidebar.php';
                 <div>
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Recent Activities</h3>
-                        <a href="#" class="text-[10px] font-bold text-[#0f53d1] hover:underline">View All</a>
+                        <a href="id-verification-logs.php" class="text-[10px] font-bold text-[#0f53d1] hover:underline">View All</a>
                     </div>
                     
                     <div class="space-y-4">
-                        <div class="flex gap-3">
-                            <div class="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-user-plus text-[10px] text-blue-500"></i></div>
-                            <div>
-                                <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">Maria Santos</span> registered a new citizen</p>
-                                <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">2 mins ago</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-3">
-                            <div class="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-pen text-[10px] text-emerald-500"></i></div>
-                            <div>
-                                <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">Juan Dela Cruz</span> updated a citizen profile</p>
-                                <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">15 mins ago</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-3">
-                            <div class="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-shield-halved text-[10px] text-amber-500"></i></div>
-                            <div>
-                                <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">Pedro Reyes</span> marked a citizen for validation</p>
-                                <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">1 hour ago</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-3">
-                            <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-download text-[10px] text-slate-500"></i></div>
-                            <div>
-                                <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold">System</span> exported 200 records</p>
-                                <p class="text-[9px] text-slate-400 mt-0.5 font-semibold">2 hours ago</p>
-                            </div>
-                        </div>
+                        <?php if (empty($recentActivitiesList)): ?>
+                            <div class="py-6 text-center text-xs text-slate-400">No recent activities recorded</div>
+                        <?php else: ?>
+                            <?php foreach ($recentActivitiesList as $act): 
+                                $actApplicant = trim("{$act['first_name']} {$act['last_name']}");
+                                $actReviewer = !empty($act['reviewed_by']) && $act['reviewed_by'] !== 'Unassigned' ? $act['reviewed_by'] : 'Admin';
+                                $actTimeStr = getRelativeTimeStr($act['activity_time']);
+                            ?>
+                                <div class="flex gap-3">
+                                    <?php if ($act['activity_type'] === 'approved'): ?>
+                                        <div class="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-check text-[10px] text-emerald-500"></i></div>
+                                        <div>
+                                            <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold"><?php echo htmlspecialchars($actReviewer); ?></span> approved <span class="font-semibold text-slate-900"><?php echo htmlspecialchars($actApplicant); ?></span></p>
+                                            <p class="text-[9px] text-slate-400 mt-0.5 font-semibold"><?php echo htmlspecialchars($actTimeStr); ?></p>
+                                        </div>
+                                    <?php elseif ($act['activity_type'] === 'rejected'): ?>
+                                        <div class="w-6 h-6 rounded-full bg-red-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-xmark text-[10px] text-red-500"></i></div>
+                                        <div>
+                                            <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold"><?php echo htmlspecialchars($actReviewer); ?></span> rejected <span class="font-semibold text-slate-900"><?php echo htmlspecialchars($actApplicant); ?></span></p>
+                                            <p class="text-[9px] text-slate-400 mt-0.5 font-semibold"><?php echo htmlspecialchars($actTimeStr); ?></p>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mt-0.5"><i class="fa-solid fa-user-plus text-[10px] text-blue-500"></i></div>
+                                        <div>
+                                            <p class="text-[11px] text-slate-700 font-medium"><span class="font-bold"><?php echo htmlspecialchars($actApplicant); ?></span> submitted verification</p>
+                                            <p class="text-[9px] text-slate-400 mt-0.5 font-semibold"><?php echo htmlspecialchars($actTimeStr); ?></p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -639,36 +721,29 @@ include '../../includes/sidebar.php';
                     </div>
                     
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between group">
-                            <div class="flex items-center gap-3">
-                                <img src="https://ui-avatars.com/api/?name=Kevin+Delos&background=random" class="w-8 h-8 rounded-full shadow-sm" alt="Avatar">
-                                <div>
-                                    <p class="text-[11px] font-bold text-slate-800 group-hover:text-[#0f53d1] transition cursor-pointer">Kevin Delos Reyes</p>
-                                    <p class="text-[9px] text-slate-500 font-medium mt-0.5">May 21, 2025 &bull; District 3</p>
+                        <?php if (empty($recentlyRegisteredList)): ?>
+                            <div class="py-6 text-center text-xs text-slate-400">No approved citizens yet</div>
+                        <?php else: ?>
+                            <?php foreach ($recentlyRegisteredList as $reg): 
+                                $regName = trim("{$reg['first_name']} {$reg['last_name']}");
+                                $regDate = !empty($reg['reviewed_at']) ? date('M d, Y', strtotime($reg['reviewed_at'])) : date('M d, Y', strtotime($reg['submitted_at']));
+                                $regLoc = !empty($reg['district']) ? $reg['district'] : (!empty($reg['barangay']) ? "Brgy. {$reg['barangay']}" : 'District 1');
+                                $regAvatar = !empty($reg['selfie_photo_url']) ? $reg['selfie_photo_url'] : ('https://ui-avatars.com/api/?name=' . urlencode($regName) . '&background=random');
+                            ?>
+                                <div class="flex items-center justify-between group">
+                                    <div class="flex items-center gap-3">
+                                        <img src="<?php echo htmlspecialchars($regAvatar); ?>" class="w-8 h-8 rounded-full object-cover shadow-sm border border-slate-100" alt="<?php echo htmlspecialchars($regName); ?>" onerror="this.src='https://ui-avatars.com/api/?name=<?php echo urlencode($regName); ?>&background=random'">
+                                        <div>
+                                            <p class="text-[11px] font-bold text-slate-800 group-hover:text-[#0f53d1] transition cursor-pointer"><?php echo htmlspecialchars($regName); ?></p>
+                                            <p class="text-[9px] text-slate-500 font-medium mt-0.5"><?php echo htmlspecialchars($regDate); ?> &bull; <?php echo htmlspecialchars($regLoc); ?></p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between group">
-                            <div class="flex items-center gap-3">
-                                <img src="https://ui-avatars.com/api/?name=Angela+Bernardo&background=random" class="w-8 h-8 rounded-full shadow-sm" alt="Avatar">
-                                <div>
-                                    <p class="text-[11px] font-bold text-slate-800 group-hover:text-[#0f53d1] transition cursor-pointer">Angela Bernardo</p>
-                                    <p class="text-[9px] text-slate-500 font-medium mt-0.5">May 21, 2025 &bull; District 1</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between group">
-                            <div class="flex items-center gap-3">
-                                <img src="https://ui-avatars.com/api/?name=Mark+John&background=random" class="w-8 h-8 rounded-full shadow-sm" alt="Avatar">
-                                <div>
-                                    <p class="text-[11px] font-bold text-slate-800 group-hover:text-[#0f53d1] transition cursor-pointer">Mark John Lim</p>
-                                    <p class="text-[9px] text-slate-500 font-medium mt-0.5">May 20, 2025 &bull; District 2</p>
-                                </div>
-                            </div>
-                        </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
-                <button class="w-full mt-4 py-2 text-[10px] font-bold text-[#0f53d1] bg-blue-50/50 rounded-lg border border-[#0f53d1]/20 hover:bg-blue-50 hover:text-[#0d46b0] transition cursor-pointer">
+                <button onclick="window.scrollTo({top: 400, behavior: 'smooth'})" class="w-full mt-4 py-2 text-[10px] font-bold text-[#0f53d1] bg-blue-50/50 rounded-lg border border-[#0f53d1]/20 hover:bg-blue-50 hover:text-[#0d46b0] transition cursor-pointer">
                     View All
                 </button>
             </div>
@@ -686,28 +761,28 @@ include '../../includes/sidebar.php';
                                 <i class="fa-solid fa-clock-rotate-left text-[10px] w-4 text-center"></i>
                                 <span class="text-[11px] font-semibold">Average Age</span>
                             </div>
-                            <span class="text-[11px] font-bold text-slate-800">29.4 years</span>
+                            <span class="text-[11px] font-bold text-slate-800"><?php echo $avgAgeDisplay; ?></span>
                         </div>
                         <div class="flex items-center justify-between border-b border-slate-100 pb-2">
                             <div class="flex items-center gap-2 text-slate-600">
                                 <i class="fa-solid fa-venus-mars text-[10px] w-4 text-center"></i>
                                 <span class="text-[11px] font-semibold">Male to Female Ratio</span>
                             </div>
-                            <span class="text-[11px] font-bold text-slate-800">48% : 52%</span>
+                            <span class="text-[11px] font-bold text-slate-800"><?php echo $genderRatioDisplay; ?></span>
                         </div>
                         <div class="flex items-center justify-between border-b border-slate-100 pb-2">
                             <div class="flex items-center gap-2 text-slate-600">
                                 <i class="fa-solid fa-house-chimney text-[10px] w-4 text-center"></i>
                                 <span class="text-[11px] font-semibold">Total Households</span>
                             </div>
-                            <span class="text-[11px] font-bold text-slate-800">3,245</span>
+                            <span class="text-[11px] font-bold text-slate-800"><?php echo $householdsDisplay; ?></span>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2 text-slate-600">
                                 <i class="fa-solid fa-bullseye text-[10px] w-4 text-center"></i>
                                 <span class="text-[11px] font-semibold">Data Accuracy Score</span>
                             </div>
-                            <span class="text-[11px] font-bold text-emerald-600">96.8%</span>
+                            <span class="text-[11px] font-bold text-emerald-600"><?php echo $accuracyDisplay; ?></span>
                         </div>
                     </div>
                 </div>
