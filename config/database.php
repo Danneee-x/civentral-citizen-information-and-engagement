@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Function to load .env file into getenv/$_ENV
 if (!function_exists('loadEnv')) {
     function loadEnv($path) {
@@ -23,7 +23,7 @@ if (!function_exists('loadEnv')) {
 loadEnv(__DIR__ . '/../.env');
 
 /**
- * Global getDbConnection() function compatible with Dokploy MySQL internal mesh
+ * Global getDbConnection() function compatible with Dokploy MySQL internal mesh & instant local XAMPP
  */
 function getDbConnection(): PDO {
     static $pdo = null;
@@ -32,45 +32,65 @@ function getDbConnection(): PDO {
     }
 
     $db = getenv('DB_NAME') ?: (getenv('MYSQL_DATABASE') ?: 'citizen_verification');
+    $isLocal = (PHP_OS_FAMILY === 'Windows') || (!file_exists('/.dockerenv') && empty(getenv('DOKPLOY')) && empty(getenv('DOCKER')));
 
-    $candidates = [
-        [
-            'host' => getenv('DB_HOST') ?: getenv('MYSQL_HOST'),
-            'port' => getenv('DB_PORT') ?: getenv('MYSQL_PORT') ?: 3306,
-            'user' => getenv('DB_USER') ?: getenv('MYSQL_USER'),
-            'pass' => getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : (getenv('MYSQL_PASSWORD') !== false ? getenv('MYSQL_PASSWORD') : getenv('MYSQL_ROOT_PASSWORD')),
-        ],
-        [
-            'host' => 'citizeninformationandengagement-citizenregistry-ffbtjn',
-            'port' => 3306,
-            'user' => 'civentral_user',
-            'pass' => 'Civentral2026!',
-        ],
-        [
-            'host' => 'citizeninformationandengagement-citizenregistry-ffbtjn',
-            'port' => 3306,
-            'user' => 'mysql',
-            'pass' => 'm68xnwxsqv3urvon',
-        ],
-        [
-            'host' => '127.0.0.1',
-            'port' => 3306,
-            'user' => 'civentral_user',
-            'pass' => 'Civentral2026!',
-        ],
-        [
-            'host' => '127.0.0.1',
-            'port' => 3306,
-            'user' => 'root',
-            'pass' => '',
-        ],
-    ];
+    if ($isLocal) {
+        // Fast local candidate list (Zero delay on Windows / XAMPP)
+        $candidates = [
+            [
+                'host' => getenv('DB_HOST') ?: '127.0.0.1',
+                'port' => getenv('DB_PORT') ?: 3306,
+                'user' => getenv('DB_USER') ?: 'root',
+                'pass' => getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : '',
+            ],
+            [
+                'host' => '127.0.0.1',
+                'port' => 3306,
+                'user' => 'civentral_user',
+                'pass' => 'Civentral2026!',
+            ],
+            [
+                'host' => 'citizeninformationandengagement-citizenregistry-ffbtjn',
+                'port' => 3306,
+                'user' => 'civentral_user',
+                'pass' => 'Civentral2026!',
+            ],
+        ];
+    } else {
+        // Dokploy Cloud environment (Linux container mesh)
+        $candidates = [
+            [
+                'host' => getenv('DB_HOST') ?: getenv('MYSQL_HOST'),
+                'port' => getenv('DB_PORT') ?: getenv('MYSQL_PORT') ?: 3306,
+                'user' => getenv('DB_USER') ?: getenv('MYSQL_USER'),
+                'pass' => getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : (getenv('MYSQL_PASSWORD') !== false ? getenv('MYSQL_PASSWORD') : getenv('MYSQL_ROOT_PASSWORD')),
+            ],
+            [
+                'host' => 'citizeninformationandengagement-citizenregistry-ffbtjn',
+                'port' => 3306,
+                'user' => 'civentral_user',
+                'pass' => 'Civentral2026!',
+            ],
+            [
+                'host' => 'citizeninformationandengagement-citizenregistry-ffbtjn',
+                'port' => 3306,
+                'user' => 'mysql',
+                'pass' => 'm68xnwxsqv3urvon',
+            ],
+            [
+                'host' => '127.0.0.1',
+                'port' => 3306,
+                'user' => 'root',
+                'pass' => '',
+            ],
+        ];
+    }
 
     $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
-        PDO::ATTR_TIMEOUT            => 3,
+        PDO::ATTR_TIMEOUT            => 2,
     ];
 
     $lastError = '';
@@ -86,14 +106,18 @@ function getDbConnection(): PDO {
             $pdo = new PDO($dsn, $cand['user'], $cand['pass'], $options);
             return $pdo;
         } catch (PDOException $e) {
-            try {
-                $noDbDsn = "mysql:host={$cand['host']};port={$cand['port']};charset=utf8mb4";
-                $tmpPdo = new PDO($noDbDsn, $cand['user'], $cand['pass'], $options);
-                $tmpPdo->exec("CREATE DATABASE IF NOT EXISTS `{$db}` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
-                $pdo = new PDO($dsn, $cand['user'], $cand['pass'], $options);
-                return $pdo;
-            } catch (PDOException $e2) {
-                $lastError = $e2->getMessage();
+            $lastError = $e->getMessage();
+            // Only attempt database creation if the host is reachable but the database doesn't exist (1049)
+            if (strpos($lastError, 'Unknown database') !== false || $e->getCode() == 1049) {
+                try {
+                    $noDbDsn = "mysql:host={$cand['host']};port={$cand['port']};charset=utf8mb4";
+                    $tmpPdo = new PDO($noDbDsn, $cand['user'], $cand['pass'], $options);
+                    $tmpPdo->exec("CREATE DATABASE IF NOT EXISTS `{$db}` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+                    $pdo = new PDO($dsn, $cand['user'], $cand['pass'], $options);
+                    return $pdo;
+                } catch (PDOException $e2) {
+                    $lastError = $e2->getMessage();
+                }
             }
         }
     }
@@ -106,25 +130,7 @@ class Database {
     private $pdo;
 
     public function __construct() {
-        try {
-            $this->pdo = getDbConnection();
-        } catch (\PDOException $e) {
-            // Standard fallback if getDbConnection throws
-            $host = getenv('DB_HOST') ?: 'localhost';
-            $port = getenv('DB_PORT') ?: '3306';
-            $db   = getenv('DB_NAME') ?: 'citizen_verification';
-            $user = getenv('DB_USER') ?: 'root';
-            $pass = getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : '';
-            $charset = 'utf8mb4';
-
-            $dsn = "mysql:host={$host};port={$port};dbname={$db};charset={$charset}";
-            $options = [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ];
-            $this->pdo = new PDO($dsn, $user, $pass, $options);
-        }
+        $this->pdo = getDbConnection();
     }
 
     public static function getInstance() {
