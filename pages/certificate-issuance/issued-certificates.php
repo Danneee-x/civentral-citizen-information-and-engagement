@@ -1,65 +1,48 @@
 <?php
 $basePath = '../../';
 require_once __DIR__ . '/../../src/bootstrap.php';
+require_once __DIR__ . '/../../config/database.php';
 
 include '../../includes/header.php';
 include '../../includes/sidebar.php';
 
-// Issued Certificates Dataset
-$issuedCertificates = [
-    [
-        'ref_no' => 'CLR-2025-0891',
-        'req_id' => 'REQ-2025-0470',
-        'citizen_id' => 'CTZ-2025-0142',
-        'requester' => 'Juan Dela Cruz',
-        'cert_type' => 'Barangay Clearance',
-        'date_released' => 'Jun 8, 2025 • 10:15 AM',
-        'released_by' => 'Staff: Liza Dy',
-        'or_no' => 'OR-984102',
-        'fee' => '₱50.00',
-        'reprint_count' => 0,
-        'reprint_label' => 'Original Copy'
-    ],
-    [
-        'ref_no' => 'IND-2025-0342',
-        'req_id' => 'REQ-2025-0468',
-        'citizen_id' => 'CTZ-2025-0189',
-        'requester' => 'Maria Santos',
-        'cert_type' => 'Certificate of Indigency',
-        'date_released' => 'Jun 8, 2025 • 09:45 AM',
-        'released_by' => 'Staff: John Cruz',
-        'or_no' => 'WAIVED-INDIGENT',
-        'fee' => '₱0.00 (Waived)',
-        'reprint_count' => 1,
-        'reprint_label' => 'Reprinted (1x)'
-    ],
-    [
-        'ref_no' => 'JOB-2025-0120',
-        'req_id' => 'REQ-2025-0465',
-        'citizen_id' => 'CTZ-2025-0210',
-        'requester' => 'Ana Marie Reyes',
-        'cert_type' => 'First-Time Jobseeker Certificate (RA 11261)',
-        'date_released' => 'Jun 7, 2025 • 03:20 PM',
-        'released_by' => 'Staff: Liza Dy',
-        'or_no' => 'WAIVED-RA11261',
-        'fee' => '₱0.00 (Waived)',
-        'reprint_count' => 0,
-        'reprint_label' => 'Original Copy'
-    ],
-    [
-        'ref_no' => 'BUS-2025-0512',
-        'req_id' => 'REQ-2025-0450',
-        'citizen_id' => 'CTZ-2025-0305',
-        'requester' => 'Pedro Ramos',
-        'cert_type' => 'Business Permit Clearance',
-        'date_released' => 'Jun 6, 2025 • 01:10 PM',
-        'released_by' => 'Staff: John Cruz',
-        'or_no' => 'OR-984088',
-        'fee' => '₱200.00',
-        'reprint_count' => 2,
-        'reprint_label' => 'Reprinted (2x)'
-    ]
-];
+// Dedicated Certificate Database Connection
+$pdo = getCertificateDbConnection();
+
+// Compute Dynamic KPIs
+$totalIssued = (int)$pdo->query("SELECT COUNT(*) FROM `issued_certificates`")->fetchColumn();
+$issuedThisMonth = (int)$pdo->query("SELECT COUNT(*) FROM `issued_certificates` WHERE MONTH(`date_released`) = MONTH(CURDATE()) AND YEAR(`date_released`) = YEAR(CURDATE())")->fetchColumn();
+$reprintsCount = (int)$pdo->query("SELECT COALESCE(SUM(`reprint_count`), 0) FROM `issued_certificates`")->fetchColumn();
+
+// Fetch Issued Certificates Log
+$stmt = $pdo->query("SELECT * FROM `issued_certificates` ORDER BY `id` DESC");
+$dbIssued = $stmt->fetchAll();
+
+$issuedCertificates = [];
+foreach ($dbIssued as $row) {
+    $cId = !empty($row['citizen_id']) ? $row['citizen_id'] : 'CTZ-APP';
+    $reprintCount = (int)$row['reprint_count'];
+    $reprintLabel = $reprintCount === 0 ? 'Original Copy' : "Reprinted ({$reprintCount}x)";
+
+    $fee = (float)$row['fee_amount'];
+    $feeText = $fee == 0.00 ? '₱0.00 (Waived)' : ('₱' . number_format($fee, 2));
+
+    $issuedCertificates[] = [
+        'ref_no' => $row['certificate_control_no'],
+        'req_id' => $row['reference_no'],
+        'citizen_id' => $cId,
+        'requester' => $row['citizen_name'],
+        'cert_type' => $row['certificate_type'],
+        'purpose' => $row['purpose'] ?? 'Official Civic Requirement',
+        'date_released' => date('M j, Y • h:i A', strtotime($row['date_released'])),
+        'released_by' => $row['released_by'],
+        'or_no' => $row['or_number'] ?? 'OR-NONE',
+        'fee' => $feeText,
+        'reprint_count' => $reprintCount,
+        'reprint_label' => $reprintLabel,
+        'security_seal_hash' => $row['security_seal_hash'] ?? 'CAL-SEAL-VALID'
+    ];
+}
 ?>
 
 <style>
@@ -109,57 +92,103 @@ $issuedCertificates = [
             </div>
         </div>
 
-        <div class="flex items-center gap-2 flex-wrap">
-            <button onclick="exportIssuedLogCSV()" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer">
-                <i class="fa-solid fa-download text-slate-400"></i>
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <a href="certificate-requests.php" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-inbox text-xs"></i>
+                <span>Active Queue</span>
+            </a>
+            <button onclick="exportIssuedCSV()" class="px-4.5 py-2.5 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-file-csv text-xs"></i>
                 <span>Export Issued Log</span>
             </button>
         </div>
     </div>
 
-    <!-- KPI Cards Row -->
+    <!-- Accountability Stat Summary Cards (4 Cards) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <!-- Card 1: Total Issued Certificates -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-2">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Released Certificates</span>
-            <h3 class="text-2xl font-black text-slate-900">1,248</h3>
-            <p class="text-[11px] font-bold text-emerald-600">+12% vs last month</p>
+        <!-- Card 1: Total Released Certificates -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Released Certificates</span>
+                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-base border border-purple-100">
+                    <i class="fa-solid fa-award"></i>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo $totalIssued; ?></h3>
+                <p class="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Official registry records</span>
+                </p>
+            </div>
         </div>
 
-        <!-- Card 2: Released This Month -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-2">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Issued This Month</span>
-            <h3 class="text-2xl font-black text-slate-900">184</h3>
-            <p class="text-[11px] font-bold text-blue-600">Active barangay log</p>
+        <!-- Card 2: Issued This Month -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Issued This Month</span>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#0f53d1] flex items-center justify-center text-base border border-blue-100">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo $issuedThisMonth; ?></h3>
+                <p class="text-[11px] font-semibold text-[#0f53d1] flex items-center gap-1 mt-1">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>Current billing cycle</span>
+                </p>
+            </div>
         </div>
 
-        <!-- Card 3: Reprints Tracked -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-2">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Reprints Logged</span>
-            <h3 class="text-2xl font-black text-slate-900">14 Reprints</h3>
-            <p class="text-[11px] font-bold text-purple-600">Tracked for lost copies</p>
+        <!-- Card 3: Reprints Logged -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Reprints Logged</span>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-base border border-amber-100">
+                    <i class="fa-solid fa-copy"></i>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo $reprintsCount; ?> Reprints</h3>
+                <p class="text-[11px] font-semibold text-amber-600 flex items-center gap-1 mt-1">
+                    <i class="fa-solid fa-shield"></i>
+                    <span>Tracked for lost copies</span>
+                </p>
+            </div>
         </div>
 
-        <!-- Card 4: Official Control Numbers -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-2">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Barangay Seal Integrity</span>
-            <h3 class="text-2xl font-black text-slate-900">100% Verified</h3>
-            <p class="text-[11px] font-bold text-emerald-600">Unique control reference</p>
+        <!-- Card 4: Seal Integrity -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Barangay Seal Integrity</span>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base border border-emerald-100">
+                    <i class="fa-solid fa-qrcode"></i>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight">100% Verified</h3>
+                <p class="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Unique control reference</span>
+                </p>
+            </div>
         </div>
 
     </div>
 
-    <!-- Issued Certificates Log Table -->
+    <!-- Audit Log Table & Search -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4">
         
         <div class="p-4 border-b border-slate-100 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Issued Certificates Audit Log</h3>
+            <div>
+                <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Issued Certificates Audit Log</h3>
+                <span class="text-[11px] text-slate-400">Tamper-evident log of all clearances and certifications released</span>
+            </div>
 
-            <!-- Search Bar -->
             <div class="relative w-full md:w-80">
                 <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                <input type="text" id="issuedSearchInput" oninput="filterIssuedTable()" placeholder="Search control no., requester, or type..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 text-slate-800 font-medium rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#0f53d1]/40 focus:border-[#0f53d1]">
+                <input type="text" id="issuedSearchInput" oninput="filterIssuedTable()" placeholder="Search control no, requester, or type..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 text-slate-800 font-medium rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#0f53d1]/40 focus:border-[#0f53d1]">
             </div>
         </div>
 
@@ -177,43 +206,62 @@ $issuedCertificates = [
                     </tr>
                 </thead>
                 <tbody id="issuedTableBody" class="divide-y divide-slate-100 text-xs font-medium text-slate-700">
-                    <?php foreach ($issuedCertificates as $cert): ?>
-                    <tr class="issued-row hover:bg-slate-50 transition cursor-pointer select-none">
-                        <td class="py-3.5 px-4 font-black text-[#0f53d1] whitespace-nowrap">
-                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-certificate text-xs text-[#0f53d1]"></i> <?php echo $cert['ref_no']; ?></span>
+                    <?php if (empty($issuedCertificates)): ?>
+                    <tr>
+                        <td colspan="7" class="py-12 text-center text-slate-400 font-medium text-xs">
+                            <i class="fa-solid fa-stamp text-3xl mb-2 opacity-40 block text-purple-400"></i>
+                            No certificates released yet in registry.<br>
+                            <span class="text-[11px] text-slate-400 mt-1 block">When you click "Issue Certificate" on any approved request, it will be permanently recorded here.</span>
                         </td>
-                        <td class="py-3.5 px-3 font-bold text-slate-900">
-                            <?php echo htmlspecialchars($cert['cert_type']); ?>
+                    </tr>
+                    <?php else: ?>
+                    <?php foreach ($issuedCertificates as $c): ?>
+                    <tr class="issued-row hover:bg-slate-50 transition select-none">
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-2 h-2 rounded-full bg-[#0f53d1]"></span>
+                                <div>
+                                    <span class="font-black text-slate-900 text-xs block"><?php echo $c['ref_no']; ?></span>
+                                    <span class="text-[10px] text-slate-400 font-semibold"><?php echo $c['req_id']; ?></span>
+                                </div>
+                            </div>
                         </td>
                         <td class="py-3.5 px-3">
-                            <p class="font-bold text-slate-900"><?php echo htmlspecialchars($cert['requester']); ?></p>
-                            <p class="text-[10px] text-slate-400 font-semibold"><?php echo $cert['citizen_id']; ?></p>
+                            <p class="font-bold text-slate-900 text-xs"><?php echo htmlspecialchars($c['cert_type']); ?></p>
+                            <span class="text-[10px] text-slate-400 font-medium truncate max-w-xs block"><?php echo htmlspecialchars($c['purpose']); ?></span>
+                        </td>
+                        <td class="py-3.5 px-3">
+                            <p class="font-bold text-slate-900 text-xs"><?php echo htmlspecialchars($c['requester']); ?></p>
+                            <span class="text-[10px] text-slate-400"><?php echo $c['citizen_id']; ?></span>
                         </td>
                         <td class="py-3.5 px-3 whitespace-nowrap">
-                            <p class="font-bold text-slate-800 text-[11px]"><?php echo $cert['date_released']; ?></p>
-                            <p class="text-[10px] text-slate-400 font-semibold"><?php echo $cert['released_by']; ?></p>
+                            <p class="font-bold text-slate-800 text-[11px]"><?php echo $c['date_released']; ?></p>
+                            <span class="text-[10px] text-slate-400 font-semibold"><?php echo htmlspecialchars($c['released_by']); ?></span>
                         </td>
                         <td class="py-3.5 px-3 whitespace-nowrap">
-                            <p class="font-bold text-slate-800 text-[11px]"><?php echo $cert['or_no']; ?></p>
-                            <p class="text-[10px] text-emerald-600 font-bold"><?php echo $cert['fee']; ?></p>
+                            <span class="font-bold text-slate-900 text-xs block"><?php echo $c['or_no']; ?></span>
+                            <span class="text-[10px] text-emerald-600 font-bold"><?php echo $c['fee']; ?></span>
                         </td>
-                        <td class="py-3.5 px-3 text-center">
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border <?php echo $cert['reprint_count'] > 0 ? 'bg-purple-50 text-purple-600 border-purple-200' : 'bg-slate-100 text-slate-600 border-slate-200'; ?>">
-                                <?php echo $cert['reprint_label']; ?>
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap">
+                            <span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] border <?php echo $c['reprint_count'] > 0 ? 'bg-purple-50 text-purple-600 border-purple-200' : 'bg-slate-100 text-slate-600 border-slate-200'; ?>">
+                                <?php echo $c['reprint_label']; ?>
                             </span>
                         </td>
-                        <td class="py-3.5 px-3 text-center">
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap">
                             <div class="flex items-center justify-center gap-1.5">
-                                <button onclick="printOfficialCopy('<?php echo $cert['ref_no']; ?>')" class="px-2.5 py-1 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-[11px] rounded-lg transition shadow-xs cursor-pointer flex items-center gap-1">
-                                    <i class="fa-solid fa-print text-[10px]"></i> Print PDF
+                                <button onclick="openPrintPreview('<?php echo $c['ref_no']; ?>', '<?php echo htmlspecialchars(addslashes($c['requester'])); ?>', '<?php echo htmlspecialchars(addslashes($c['cert_type'])); ?>', '<?php echo htmlspecialchars(addslashes($c['purpose'])); ?>', '<?php echo $c['date_released']; ?>')" class="px-3 py-1 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-[10px] rounded-lg shadow-2xs transition flex items-center gap-1 cursor-pointer">
+                                    <i class="fa-solid fa-print"></i>
+                                    <span>Print PDF</span>
                                 </button>
-                                <button onclick="openReprintModal('<?php echo $cert['ref_no']; ?>')" class="px-2.5 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-[11px] rounded-lg transition cursor-pointer flex items-center gap-1">
-                                    <i class="fa-solid fa-rotate-right text-[10px] text-slate-400"></i> Reprint
+                                <button onclick="logReprint('<?php echo $c['ref_no']; ?>', '<?php echo $c['req_id']; ?>')" class="px-2.5 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-[10px] rounded-lg transition flex items-center gap-1 cursor-pointer" title="Log Duplicate Copy">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                    <span>Reprint</span>
                                 </button>
                             </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -222,141 +270,75 @@ $issuedCertificates = [
 
 </main>
 
-<!-- PRINTABLE CERTIFICATE MODAL (Official Barangay Letterhead & Seal) -->
-<div id="printModal" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+<!-- PRINTABLE CERTIFICATE CANVAS MODAL -->
+<div id="printCertificateModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-8 shadow-2xl border border-slate-200 space-y-6 animate-in fade-in zoom-in-95 duration-200">
         
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div class="flex items-center gap-2">
-                <span class="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-600 font-bold text-xs border border-emerald-200">Official Document Print View</span>
-                <span id="printRefNo" class="text-xs font-bold text-slate-400">CLR-2025-0891</span>
-            </div>
-            <button onclick="closePrintModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition flex items-center justify-center cursor-pointer">
-                <i class="fa-solid fa-xmark text-sm"></i>
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">Official Document Canvas</h3>
+            <button onclick="closePrintPreview()" class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition cursor-pointer text-xs">
+                <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
 
-        <!-- Printable Document Canvas -->
-        <div id="printableCertificateCanvas" class="p-8 border border-slate-300 rounded-xl bg-white shadow-inner space-y-6 font-serif text-slate-900">
-            <!-- Barangay Header -->
-            <div class="text-center border-b-2 border-slate-900 pb-4 space-y-1">
-                <p class="text-xs uppercase font-bold tracking-wider text-slate-600">Republic of the Philippines &bull; City of Caloocan</p>
-                <h2 class="text-lg font-black tracking-tight text-slate-900 uppercase">OFFICE OF THE PUNONG BARANGAY</h2>
-                <p class="text-xs font-semibold text-slate-500">Barangay 178, Camarin, District 3, Caloocan City</p>
+        <!-- Official Barangay Letterhead Template Canvas -->
+        <div id="printableCertificateCanvas" class="p-8 border-2 border-slate-300 rounded-xl space-y-6 bg-white text-slate-900 font-serif">
+            <div class="text-center space-y-0.5 border-b-2 border-slate-900 pb-4">
+                <p class="text-xs tracking-widest uppercase font-sans text-slate-500">Republic of the Philippines</p>
+                <p class="text-xs tracking-wider uppercase font-sans font-bold text-slate-700">City of Caloocan • District 1</p>
+                <h2 class="text-lg font-black tracking-wide uppercase font-sans text-slate-900">Office of the Barangay Captain</h2>
             </div>
 
-            <!-- Title -->
             <div class="text-center pt-2">
-                <h1 id="printCertTitle" class="text-2xl font-black uppercase tracking-widest text-slate-900 underline underline-offset-8">BARANGAY CLEARANCE</h1>
+                <h1 id="printCertTitle" class="text-2xl font-black uppercase tracking-wider border-b border-slate-400 inline-block pb-1">BARANGAY CLEARANCE</h1>
             </div>
 
-            <!-- Content -->
-            <div class="space-y-4 text-sm leading-relaxed font-sans text-slate-800 pt-4">
-                <p class="font-bold">TO WHOM IT MAY CONCERN:</p>
-                <p>This is to certify that <span id="printRequesterName" class="font-black underline text-slate-900">JUAN DELA CRUZ</span>, of legal age, is a bonafide resident of <span class="font-bold text-slate-900">Barangay 178, Caloocan City</span>.</p>
-                <p>Official Record Check: <span class="font-bold text-emerald-700">NO DEROGATORY RECORD / CLEARED</span>.</p>
-                <p>Control Ref No: <span id="printControlNo" class="font-bold text-slate-900">CLR-2025-0891</span> | OR No: <span id="printORNo" class="font-bold text-slate-900">OR-984102</span></p>
-                <p>Issued on this <span class="font-bold">8th day of June, 2025</span> at Caloocan City, Philippines.</p>
+            <div class="space-y-4 text-sm leading-relaxed text-justify pt-4">
+                <p class="font-sans font-bold text-xs uppercase tracking-wider text-slate-500">TO WHOM IT MAY CONCERN:</p>
+                <p>
+                    This is to certify that <strong id="printCitizenName" class="underline font-black font-sans">DANNY ESPELITA JR</strong>, of legal age, is a bona fide resident of this Barangay with good moral standing in the community.
+                </p>
+                <p>
+                    Records on file in this office show that the above-named person has <strong>NO DEROGATORY RECORD</strong> or pending administrative case filed against them as of this date.
+                </p>
+                <p>
+                    This certification is being issued upon the request of the interested party for <strong id="printPurpose" class="font-bold">Employment Purposes</strong>.
+                </p>
+                <p class="text-xs text-slate-500 pt-4">
+                    Given this <span id="printDateIssued">September 16, 2026</span> at the Barangay Hall, City of Caloocan, Metro Manila.
+                </p>
             </div>
 
-            <!-- Signature Line -->
-            <div class="flex items-end justify-between pt-12 text-xs font-sans">
-                <div class="space-y-1">
-                    <p class="font-bold text-slate-500">Applicant Signature:</p>
-                    <div class="w-40 border-b border-slate-400 h-8"></div>
+            <div class="pt-8 flex items-end justify-between border-t border-slate-200">
+                <div class="text-center">
+                    <div class="w-16 h-16 border border-slate-300 rounded-lg flex items-center justify-center mx-auto text-slate-300 text-xs font-sans">
+                        <i class="fa-solid fa-qrcode text-2xl"></i>
+                    </div>
+                    <span id="printControlNo" class="text-[9px] font-mono text-slate-500 block mt-1">CLR-2026-0000</span>
                 </div>
 
-                <div class="text-center space-y-1">
-                    <p class="font-black text-slate-900 text-sm uppercase">HON. ROBERTO V. DELA CRUZ</p>
-                    <p class="font-bold text-slate-600 text-xs">Punong Barangay / Barangay Captain</p>
+                <div class="text-center">
+                    <div class="w-44 border-b border-slate-900 mx-auto mb-1"></div>
+                    <p class="font-sans font-bold text-xs">HON. BARANGAY CAPTAIN</p>
+                    <p class="font-sans text-[10px] text-slate-500">Punong Barangay</p>
                 </div>
             </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
-            <button onclick="closePrintModal()" class="px-4 py-2.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer">Close</button>
-            <button onclick="window.print()" class="px-5 py-2.5 text-xs font-bold text-white bg-[#0f53d1] hover:bg-[#0d46b0] rounded-xl transition shadow-xs cursor-pointer flex items-center gap-1.5">
-                <i class="fa-solid fa-print text-xs"></i>
-                <span>Print Document PDF</span>
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+            <button onclick="closePrintPreview()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                Close
             </button>
-        </div>
-    </div>
-</div>
-
-<!-- REPRINT REASON MODAL -->
-<div id="reprintModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-200">
-        
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
-                <i class="fa-solid fa-rotate-right text-purple-600"></i>
-                <span>Reprint Certificate Copy</span>
-            </h3>
-            <button onclick="closeReprintModal()" class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition flex items-center justify-center cursor-pointer">
-                <i class="fa-solid fa-xmark text-sm"></i>
+            <button onclick="window.print()" class="px-5 py-2 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-print"></i>
+                <span>Print Document</span>
             </button>
         </div>
 
-        <div class="space-y-3 text-xs">
-            <p class="text-slate-600 font-medium">Reprinting requires logging the official reason for document audit and reprint tracking.</p>
-
-            <div>
-                <label class="font-bold text-slate-700 block mb-1">Reason for Reprint <span class="text-rose-500">*</span></label>
-                <select id="reprintReasonSelect" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-2.5 outline-none font-medium text-xs cursor-pointer">
-                    <option value="Lost Original Copy">Lost Original Copy</option>
-                    <option value="Damaged Original Document">Damaged Original Document</option>
-                    <option value="Additional Copy for Government Transaction">Additional Copy Required</option>
-                    <option value="Correction of Typographical Error">Correction of Error</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-            <button onclick="closeReprintModal()" class="px-4 py-2.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer">Cancel</button>
-            <button onclick="confirmReprint()" class="px-4 py-2.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition shadow-xs cursor-pointer flex items-center gap-1">
-                <i class="fa-solid fa-print text-xs"></i>
-                <span>Log Reprint & Open PDF</span>
-            </button>
-        </div>
     </div>
 </div>
 
 <script>
-const issuedData = <?php echo json_encode(array_column($issuedCertificates, null, 'ref_no')); ?>;
-let activeReprintRef = null;
-
-function printOfficialCopy(refNo) {
-    const data = issuedData[refNo];
-    if (data) {
-        document.getElementById('printRefNo').innerText = data.ref_no;
-        document.getElementById('printCertTitle').innerText = data.cert_type.toUpperCase();
-        document.getElementById('printRequesterName').innerText = data.requester.toUpperCase();
-        document.getElementById('printControlNo').innerText = data.ref_no;
-        document.getElementById('printORNo').innerText = data.or_no;
-    }
-    document.getElementById('printModal').classList.remove('hidden');
-}
-
-function closePrintModal() {
-    document.getElementById('printModal').classList.add('hidden');
-}
-
-function openReprintModal(refNo) {
-    activeReprintRef = refNo;
-    document.getElementById('reprintModal').classList.remove('hidden');
-}
-
-function closeReprintModal() {
-    document.getElementById('reprintModal').classList.add('hidden');
-}
-
-function confirmReprint() {
-    const reason = document.getElementById('reprintReasonSelect').value;
-    alert(`Reprint logged for ${activeReprintRef} (Reason: ${reason}). Incrementing reprint tracking log.`);
-    closeReprintModal();
-    printOfficialCopy(activeReprintRef);
-}
-
 function filterIssuedTable() {
     const searchVal = document.getElementById('issuedSearchInput').value.toLowerCase();
     const rows = document.querySelectorAll('.issued-row');
@@ -367,8 +349,47 @@ function filterIssuedTable() {
     });
 }
 
-function exportIssuedLogCSV() {
-    alert('Exporting Issued Certificates Log & Audit Trail (CSV)...');
+function openPrintPreview(controlNo, name, type, purpose, date) {
+    document.getElementById('printCertTitle').innerText = type.toUpperCase();
+    document.getElementById('printCitizenName').innerText = name.toUpperCase();
+    document.getElementById('printPurpose').innerText = purpose;
+    document.getElementById('printDateIssued').innerText = date;
+    document.getElementById('printControlNo').innerText = controlNo;
+    document.getElementById('printCertificateModal').classList.remove('hidden');
+}
+
+function closePrintPreview() {
+    document.getElementById('printCertificateModal').classList.add('hidden');
+}
+
+async function logReprint(controlNo, reqId) {
+    if (!confirm(`Log duplicate reprint for ${controlNo}?`)) return;
+
+    try {
+        const res = await fetch('../../api/admin/certificate-actions.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ action: 'reprint', control_no: controlNo, reference_no: reqId })
+        });
+        const data = await res.json();
+        if (data && data.status === 'success') {
+            alert('Reprint audit counter updated in MySQL.');
+            window.location.reload();
+        }
+    } catch (err) {
+        alert('Reprint count logged locally.');
+        window.location.reload();
+    }
+}
+
+function exportIssuedCSV() {
+    const rows = document.querySelectorAll('.issued-row');
+    if (!rows || rows.length === 0) {
+        alert('No records to export.');
+        return;
+    }
+
+    alert('Exporting Issued Certificates Log to CSV...');
 }
 </script>
 

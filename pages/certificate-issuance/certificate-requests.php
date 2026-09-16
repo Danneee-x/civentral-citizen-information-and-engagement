@@ -1,106 +1,87 @@
 <?php
 $basePath = '../../';
 require_once __DIR__ . '/../../src/bootstrap.php';
+require_once __DIR__ . '/../../config/database.php';
 
 include '../../includes/header.php';
 include '../../includes/sidebar.php';
 
-// Mock Citizen Registry for Auto-Fill Feature
-$citizenRegistry = [
-    'CTZ-2025-0142' => [
-        'id' => 'CTZ-2025-0142',
-        'name' => 'Juan Dela Cruz',
-        'address' => 'Barangay 178, Camarin, District 3, Caloocan City',
-        'contact' => '0917 123 4567',
-        'civil_status' => 'Single',
-        'resident_since' => '2015'
-    ],
-    'CTZ-2025-0189' => [
-        'id' => 'CTZ-2025-0189',
-        'name' => 'Maria Santos',
-        'address' => 'Barangay 176, Bagong Silang, District 1, Caloocan City',
-        'contact' => '0918 987 6543',
-        'civil_status' => 'Married',
-        'resident_since' => '2010'
-    ],
-    'CTZ-2025-0210' => [
-        'id' => 'CTZ-2025-0210',
-        'name' => 'Ana Marie Reyes',
-        'address' => 'Barangay 12, District 2, Caloocan City',
-        'contact' => '0920 555 4321',
-        'civil_status' => 'Single',
-        'resident_since' => '2020'
-    ]
-];
+// Dedicated Certificate Database Connection
+$pdo = getCertificateDbConnection();
 
-// Mock Certificate Requests Dataset
-$requests = [
-    [
-        'id' => 'REQ-2025-0481',
-        'citizen_id' => 'CTZ-2025-0142',
-        'requester' => 'Juan Dela Cruz',
-        'address' => 'Barangay 178, Caloocan City',
-        'cert_type' => 'Barangay Clearance',
-        'purpose' => 'Employment (Local Job Application)',
-        'date_requested' => 'Jun 8, 2025 • 09:30 AM',
-        'encoded_by' => 'Walk-in Staff (Staff: Liza Dy)',
-        'docs' => ['Valid ID (Philsys)', 'Proof of Billing'],
-        'status' => 'Pending',
-        'status_class' => 'bg-amber-50 text-amber-600 border-amber-200'
-    ],
-    [
-        'id' => 'REQ-2025-0482',
-        'citizen_id' => 'CTZ-2025-0189',
-        'requester' => 'Maria Santos',
-        'address' => 'Barangay 176, Caloocan City',
-        'cert_type' => 'Certificate of Indigency',
-        'purpose' => 'Medical Assistance (Hospitalization)',
-        'date_requested' => 'Jun 8, 2025 • 10:15 AM',
-        'encoded_by' => 'Citizen Self-Service Portal',
-        'docs' => ['Voter ID', 'Barangay Social Case Study'],
-        'status' => 'Approved',
-        'status_class' => 'bg-blue-50 text-[#0f53d1] border-blue-200'
-    ],
-    [
-        'id' => 'REQ-2025-0483',
-        'citizen_id' => 'CTZ-2025-0210',
-        'requester' => 'Ana Marie Reyes',
-        'address' => 'Barangay 12, Caloocan City',
-        'cert_type' => 'First-Time Jobseeker Certificate (RA 11261)',
-        'purpose' => 'Employment (First Job Application)',
-        'date_requested' => 'Jun 7, 2025 • 02:45 PM',
-        'encoded_by' => 'Walk-in Staff (Staff: John Cruz)',
-        'docs' => ['School Diploma / Transcript', 'First Jobseeker Oath'],
-        'status' => 'Ready for Release',
-        'status_class' => 'bg-purple-50 text-purple-600 border-purple-200'
-    ],
-    [
-        'id' => 'REQ-2025-0484',
-        'citizen_id' => 'CTZ-2025-0305',
-        'requester' => 'Pedro Ramos',
-        'address' => 'Barangay 1, Caloocan City',
-        'cert_type' => 'Business Permit Clearance',
-        'purpose' => 'New Business Registration (Sari-Sari Store)',
-        'date_requested' => 'Jun 6, 2025 • 11:20 AM',
-        'encoded_by' => 'Walk-in Staff (Staff: Liza Dy)',
-        'docs' => ['DTI Registration', 'Locational Map'],
-        'status' => 'Released',
-        'status_class' => 'bg-emerald-50 text-emerald-600 border-emerald-200'
-    ],
-    [
-        'id' => 'REQ-2025-0485',
-        'citizen_id' => 'CTZ-2025-0412',
-        'requester' => 'Roderick Lim',
-        'address' => 'Barangay 88, Caloocan City',
-        'cert_type' => 'Certificate of Good Moral Character',
-        'purpose' => 'School Enrollment & Scholarship',
-        'date_requested' => 'Jun 5, 2025 • 04:10 PM',
-        'encoded_by' => 'Citizen Self-Service Portal',
-        'docs' => ['Student ID'],
-        'status' => 'Rejected',
-        'status_class' => 'bg-rose-50 text-rose-600 border-rose-200'
-    ]
-];
+// Auto-fill Citizen Registry from citizen_verifications table
+$registeredCitizens = [];
+try {
+    $verPdo = getDbConnection();
+    $citStmt = $verPdo->query("SELECT id, first_name, last_name, middle_name, current_address, barangay, mobile_number FROM citizen_verifications WHERE status = 'Approved' ORDER BY id DESC LIMIT 50");
+    while ($c = $citStmt->fetch()) {
+        $cId = 'CTZ-2026-' . str_pad($c['id'], 4, '0', STR_PAD_LEFT);
+        $name = trim("{$c['first_name']} {$c['middle_name']} {$c['last_name']}");
+        $registeredCitizens[$cId] = [
+            'id' => $cId,
+            'name' => $name,
+            'address' => (!empty($c['current_address']) ? $c['current_address'] . ', ' : '') . ($c['barangay'] ?? 'Caloocan City'),
+            'contact' => $c['mobile_number'] ?? '09170000000',
+            'civil_status' => 'Single',
+            'resident_since' => '2018'
+        ];
+    }
+} catch (Exception $e) {
+    // Fallback if verification DB offline
+}
+
+// Compute Dynamic KPIs from civentral_certificates.certificate_requests
+$totalRequests = (int)$pdo->query("SELECT COUNT(*) FROM `certificate_requests`")->fetchColumn();
+$pendingProcessing = (int)$pdo->query("SELECT COUNT(*) FROM `certificate_requests` WHERE `status` IN ('Pending', 'Under Review')")->fetchColumn();
+$readyForRelease = (int)$pdo->query("SELECT COUNT(*) FROM `certificate_requests` WHERE `status` = 'Ready for Release'")->fetchColumn();
+$releasedToday = (int)$pdo->query("SELECT COUNT(*) FROM `certificate_requests` WHERE `status` = 'Released' AND DATE(`released_at`) = CURDATE()")->fetchColumn();
+
+// Fetch Live Certificate Requests
+$stmt = $pdo->query("SELECT * FROM `certificate_requests` ORDER BY `request_id` DESC");
+$dbRequests = $stmt->fetchAll();
+
+$requests = [];
+foreach ($dbRequests as $row) {
+    $stat = $row['status'];
+    $statusClass = 'bg-slate-100 text-slate-700 border-slate-200';
+    if ($stat === 'Pending') $statusClass = 'bg-amber-50 text-amber-600 border-amber-200';
+    else if ($stat === 'Under Review') $statusClass = 'bg-blue-50 text-blue-600 border-blue-200';
+    else if ($stat === 'Approved') $statusClass = 'bg-indigo-50 text-indigo-600 border-indigo-200';
+    else if ($stat === 'Ready for Release') $statusClass = 'bg-purple-50 text-purple-600 border-purple-200';
+    else if ($stat === 'Released') $statusClass = 'bg-emerald-50 text-emerald-600 border-emerald-200';
+    else if ($stat === 'Rejected') $statusClass = 'bg-rose-50 text-rose-600 border-rose-200';
+
+    $docList = [];
+    if (!empty($row['uploaded_documents'])) {
+        $decoded = json_decode($row['uploaded_documents'], true);
+        if (is_array($decoded)) {
+            foreach ($decoded as $d) {
+                $docList[] = is_array($d) ? ($d['name'] ?? 'Supporting Document') : (string)$d;
+            }
+        }
+    }
+
+    $requests[] = [
+        'id' => $row['reference_no'],
+        'request_id' => $row['request_id'],
+        'citizen_id' => $row['citizen_user_id'] ? 'CTZ-2026-' . str_pad($row['citizen_user_id'], 4, '0', STR_PAD_LEFT) : 'CTZ-WALK-IN',
+        'requester' => $row['citizen_name'],
+        'address' => $row['street_address'] . (!empty($row['barangay']) ? ', ' . $row['barangay'] : ''),
+        'cert_type' => $row['certificate_type'],
+        'purpose' => $row['purpose'],
+        'purpose_details' => $row['purpose_details'] ?? '',
+        'additional_notes' => $row['additional_notes'] ?? '',
+        'date_requested' => date('M j, Y • h:i A', strtotime($row['created_at'])),
+        'encoded_by' => $row['encoded_by'],
+        'contact' => $row['contact_number'] ?? 'Not provided',
+        'docs' => $docList,
+        'status' => $row['status'],
+        'status_class' => $statusClass,
+        'fee_amount' => number_format((float)$row['fee_amount'], 2),
+        'payment_status' => $row['payment_status'],
+        'or_number' => $row['or_number'] ?? 'None'
+    ];
+}
 ?>
 
 <style>
@@ -136,6 +117,10 @@ $requests = [
         </div>
 
         <div class="flex items-center gap-2.5 flex-wrap">
+            <button onclick="refreshRequestsQueue()" class="px-3.5 py-2.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer" title="Refresh Live Queue">
+                <i class="fa-solid fa-rotate text-xs" id="certRefreshIcon"></i>
+                <span>Refresh</span>
+            </button>
             <button onclick="exportRequestsCSV()" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer">
                 <i class="fa-solid fa-download text-slate-400"></i>
                 <span>Export List</span>
@@ -160,10 +145,10 @@ $requests = [
                 </div>
             </div>
             <div>
-                <h3 class="text-2xl font-black text-slate-900 tracking-tight">142</h3>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo $totalRequests; ?></h3>
                 <p class="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
-                    <i class="fa-solid fa-arrow-trend-up"></i>
-                    <span>+18% vs last week</span>
+                    <i class="fa-solid fa-database"></i>
+                    <span>Live Database Records</span>
                 </p>
             </div>
         </div>
@@ -177,10 +162,10 @@ $requests = [
                 </div>
             </div>
             <div>
-                <h3 class="text-2xl font-black text-slate-900 tracking-tight">14</h3>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo $pendingProcessing; ?></h3>
                 <p class="text-[11px] font-semibold text-amber-600 flex items-center gap-1 mt-1">
                     <i class="fa-solid fa-hourglass-half"></i>
-                    <span>Awaiting captain approval</span>
+                    <span>Awaiting clerk / captain approval</span>
                 </p>
             </div>
         </div>
@@ -194,7 +179,7 @@ $requests = [
                 </div>
             </div>
             <div>
-                <h3 class="text-2xl font-black text-slate-900 tracking-tight">8</h3>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo $readyForRelease; ?></h3>
                 <p class="text-[11px] font-semibold text-purple-600 flex items-center gap-1 mt-1">
                     <i class="fa-solid fa-building-flag"></i>
                     <span>For pickup at Barangay Hall</span>
@@ -211,10 +196,10 @@ $requests = [
                 </div>
             </div>
             <div>
-                <h3 class="text-2xl font-black text-slate-900 tracking-tight">38</h3>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo $releasedToday; ?></h3>
                 <p class="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
                     <i class="fa-solid fa-check"></i>
-                    <span>100% processing efficiency</span>
+                    <span>Cleared today</span>
                 </p>
             </div>
         </div>
@@ -240,6 +225,7 @@ $requests = [
                     <!-- Certificate Type Filter -->
                     <select id="certTypeFilter" onchange="filterRequestsTable()" class="bg-slate-50 border border-slate-200 text-slate-800 font-semibold rounded-xl py-2.5 px-3 text-xs outline-none cursor-pointer">
                         <option value="">All Certificate Types</option>
+                        <option value="Barangay Certificate">Barangay Certificate</option>
                         <option value="Barangay Clearance">Barangay Clearance</option>
                         <option value="Certificate of Residency">Certificate of Residency</option>
                         <option value="Certificate of Indigency">Certificate of Indigency</option>
@@ -269,7 +255,7 @@ $requests = [
             <!-- Certificate Requests Table Card -->
             <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Requests Directory <span id="requestsCountBadge" class="text-slate-400 font-normal ml-1">(5 requests)</span></h3>
+                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Requests Directory <span id="requestsCountBadge" class="text-slate-400 font-normal ml-1">(<?php echo count($requests); ?> requests)</span></h3>
                 </div>
 
                 <div class="overflow-x-auto custom-scrollbar">
@@ -280,12 +266,21 @@ $requests = [
                                 <th class="py-3.5 px-3">Certificate Type</th>
                                 <th class="py-3.5 px-3">Purpose</th>
                                 <th class="py-3.5 px-3">Date Requested & Source</th>
-                                <th class="py-3.5 px-3">Uploaded Docs</th>
+                                <th class="py-3.5 px-3">Fee / OR</th>
                                 <th class="py-3.5 px-3 text-center">Status</th>
                                 <th class="py-3.5 px-3 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="requestsTableBody" class="divide-y divide-slate-100 text-xs font-medium text-slate-700">
+                            <?php if (empty($requests)): ?>
+                            <tr>
+                                <td colspan="7" class="py-12 text-center text-slate-400 font-medium text-xs">
+                                    <i class="fa-solid fa-folder-open text-3xl mb-2 opacity-40 block"></i>
+                                    No certificate requests found in database.<br>
+                                    <span class="text-[11px] text-slate-400 mt-1 block">Requests submitted from the mobile app or encoded here will appear live.</span>
+                                </td>
+                            </tr>
+                            <?php else: ?>
                             <?php foreach ($requests as $req): ?>
                             <tr onclick="selectRequestRow(this, '<?php echo $req['id']; ?>')" class="request-row hover:bg-slate-50 transition cursor-pointer select-none" data-id="<?php echo $req['id']; ?>" data-cert="<?php echo htmlspecialchars($req['cert_type']); ?>" data-status="<?php echo htmlspecialchars($req['status']); ?>">
                                 <td class="py-3.5 px-4">
@@ -304,7 +299,7 @@ $requests = [
                                 </td>
                                 <td class="py-3.5 px-3">
                                     <span class="font-bold text-slate-900 text-xs block"><?php echo htmlspecialchars($req['cert_type']); ?></span>
-                                    <span class="text-[10px] text-slate-400 font-medium"><?php echo htmlspecialchars($req['address']); ?></span>
+                                    <span class="text-[10px] text-slate-400 font-medium truncate max-w-xs block"><?php echo htmlspecialchars($req['address']); ?></span>
                                 </td>
                                 <td class="py-3.5 px-3 text-slate-700 font-medium">
                                     <span class="truncate block max-w-xs"><?php echo htmlspecialchars($req['purpose']); ?></span>
@@ -313,66 +308,40 @@ $requests = [
                                     <p class="font-bold text-slate-800 text-[11px]"><?php echo $req['date_requested']; ?></p>
                                     <p class="text-[10px] text-slate-400 font-semibold"><?php echo $req['encoded_by']; ?></p>
                                 </td>
-                                <td class="py-3.5 px-3">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px] border border-slate-200 flex items-center gap-1">
-                                            <i class="fa-solid fa-paperclip text-[9px] text-slate-400"></i>
-                                            <?php echo count($req['docs']); ?> Attachments
-                                        </span>
-                                    </div>
+                                <td class="py-3.5 px-3 whitespace-nowrap">
+                                    <span class="font-bold text-slate-900 text-xs block">₱<?php echo $req['fee_amount']; ?></span>
+                                    <span class="text-[10px] font-semibold text-slate-400"><?php echo $req['payment_status']; ?></span>
                                 </td>
                                 <td class="py-3.5 px-3 text-center">
                                     <span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] border <?php echo $req['status_class']; ?>"><?php echo $req['status']; ?></span>
                                 </td>
-                                <td class="py-3.5 px-3 text-center">
+                                <td class="py-3.5 px-3 text-center" onclick="event.stopPropagation();">
                                     <div class="flex items-center justify-center gap-1">
-                                        <button onclick="event.stopPropagation(); selectRequestRow(this.closest('tr'), '<?php echo $req['id']; ?>');" class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#0f53d1] flex items-center justify-center transition cursor-pointer" title="View Request Details"><i class="fa-regular fa-eye text-xs"></i></button>
-                                        <button onclick="event.stopPropagation(); processRequestAction('<?php echo $req['id']; ?>');" class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-emerald-600 flex items-center justify-center transition cursor-pointer" title="Process Request"><i class="fa-solid fa-user-check text-xs"></i></button>
+                                        <button onclick="selectRequestRow(this.closest('tr'), '<?php echo $req['id']; ?>')" class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-[#0f53d1] flex items-center justify-center transition cursor-pointer" title="View Request Details"><i class="fa-regular fa-eye text-xs"></i></button>
+                                        <?php if ($req['status'] === 'Pending' || $req['status'] === 'Under Review'): ?>
+                                        <button onclick="processQuickAction('approve', '<?php echo $req['id']; ?>')" class="w-7 h-7 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 flex items-center justify-center transition cursor-pointer" title="Approve Request"><i class="fa-solid fa-check text-xs"></i></button>
+                                        <?php elseif ($req['status'] === 'Ready for Release' || $req['status'] === 'Approved'): ?>
+                                        <button onclick="processQuickAction('release', '<?php echo $req['id']; ?>')" class="w-7 h-7 rounded-lg hover:bg-purple-50 text-slate-400 hover:text-purple-600 flex items-center justify-center transition cursor-pointer" title="Issue & Release Certificate"><i class="fa-solid fa-stamp text-xs"></i></button>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
-                            <tr id="noRequestsRow" class="hidden">
-                                <td colspan="7" class="p-8 text-center text-slate-400 font-medium text-xs">
-                                    <i class="fa-solid fa-folder-open text-2xl mb-2 block text-slate-300"></i>
-                                    No certificate requests match the filter criteria.
-                                </td>
-                            </tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
-                </div>
-
-                <!-- Footer Pagination -->
-                <div class="px-4 py-3 bg-slate-50/50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium">
-                    <div>
-                        <span>Showing 1 to 5 of 5 requests</span>
-                    </div>
-
-                    <div class="flex items-center gap-1.5">
-                        <button class="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-700 transition cursor-pointer text-xs"><i class="fa-solid fa-chevron-left text-[10px]"></i></button>
-                        <button class="w-7 h-7 rounded-lg bg-[#0f53d1] text-white font-bold flex items-center justify-center shadow-xs text-xs">1</button>
-                        <button class="w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-700 transition cursor-pointer text-xs"><i class="fa-solid fa-chevron-right text-[10px]"></i></button>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <span class="text-[11px]">Rows per page</span>
-                        <select class="bg-white border border-slate-200 rounded-lg text-xs font-bold px-2 py-1 outline-none cursor-pointer">
-                            <option>10</option>
-                            <option>25</option>
-                        </select>
-                    </div>
                 </div>
             </div>
 
         </div>
 
-        <!-- Right Side Inspector Drawer: Request Details & Attached Documents (Hidden by Default) -->
+        <!-- Right Side Inspector Drawer: Request Details & Attached Documents -->
         <div id="requestDetailsDrawer" class="hidden lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-5 sticky top-6">
             
             <!-- Drawer Header -->
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center gap-2">
-                    <span id="drawerReqId" class="text-xs font-bold text-[#0f53d1]">REQ-2025-0481</span>
+                    <span id="drawerReqId" class="text-xs font-bold text-[#0f53d1]">CAL-DOC-2026-0000</span>
                     <span id="drawerReqStatus" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-50 text-amber-600 border border-amber-200">Pending</span>
                 </div>
                 <button onclick="closeRequestDrawer()" class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition cursor-pointer text-xs">
@@ -380,13 +349,13 @@ $requests = [
                 </button>
             </div>
 
-            <!-- Requester Details (Auto-filled from Registry) -->
+            <!-- Requester Details -->
             <div class="space-y-3">
                 <div>
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Requester Profile</span>
-                    <h3 id="drawerRequesterName" class="text-sm font-black text-slate-900 leading-snug">Juan Dela Cruz</h3>
-                    <p id="drawerCitizenId" class="text-xs text-[#0f53d1] font-bold">CTZ-2025-0142</p>
-                    <p id="drawerRequesterAddress" class="text-xs text-slate-500 font-medium mt-1">Barangay 178, Camarin, District 3, Caloocan City</p>
+                    <h3 id="drawerRequesterName" class="text-sm font-black text-slate-900 leading-snug">Danny Espelita Jr</h3>
+                    <p id="drawerCitizenId" class="text-xs text-[#0f53d1] font-bold">CTZ-2026-0001</p>
+                    <p id="drawerRequesterAddress" class="text-xs text-slate-500 font-medium mt-1">Barangay 171, Caloocan City</p>
                 </div>
 
                 <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs">
@@ -396,54 +365,48 @@ $requests = [
                     </div>
                     <div class="flex items-center justify-between text-[11px]">
                         <span class="text-slate-400 font-medium">Purpose</span>
-                        <span id="drawerPurpose" class="font-bold text-slate-800 truncate max-w-[170px]">Employment (Local)</span>
+                        <span id="drawerPurpose" class="font-bold text-slate-800 truncate max-w-[170px]">Employment</span>
                     </div>
                     <div class="flex items-center justify-between text-[11px]">
-                        <span class="text-slate-400 font-medium">Date Encoded</span>
-                        <span id="drawerDateRequested" class="font-bold text-slate-800">Jun 8, 2025</span>
+                        <span class="text-slate-400 font-medium">Fee / Amount</span>
+                        <span id="drawerFee" class="font-bold text-emerald-600">₱50.00</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-400 font-medium">Payment Status</span>
+                        <span id="drawerPaymentStatus" class="font-bold text-slate-800">Pending</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-400 font-medium">Contact Phone</span>
+                        <span id="drawerContact" class="font-bold text-slate-800">09171234567</span>
                     </div>
                 </div>
             </div>
 
             <!-- Uploaded Supporting Documents Section -->
             <div class="space-y-3 border-t border-slate-100 pt-3">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Uploaded Supporting Documents</span>
-                
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Attached Documents</span>
                 <div id="drawerDocsList" class="space-y-2">
-                    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-file-pdf text-rose-500 text-sm"></i>
-                            <div>
-                                <p class="font-bold text-slate-800 text-[11px]">Valid_ID_Philsys.pdf</p>
-                                <p class="text-[9px] text-slate-400">Verified Citizen Document</p>
-                            </div>
-                        </div>
-                        <button onclick="alert('Viewing document preview...')" class="text-xs text-[#0f53d1] font-bold hover:underline">Preview</button>
-                    </div>
-
-                    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-file-image text-blue-500 text-sm"></i>
-                            <div>
-                                <p class="font-bold text-slate-800 text-[11px]">Proof_of_Address.jpg</p>
-                                <p class="text-[9px] text-slate-400">Utility Bill Attachment</p>
-                            </div>
-                        </div>
-                        <button onclick="alert('Viewing document preview...')" class="text-xs text-[#0f53d1] font-bold hover:underline">Preview</button>
-                    </div>
+                    <span class="text-xs text-slate-400 italic">No attachments provided</span>
                 </div>
             </div>
 
             <!-- Quick Action Buttons -->
-            <div class="flex items-center gap-2 border-t border-slate-100 pt-4">
-                <button type="button" onclick="forwardToApproval()" class="flex-1 py-2.5 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-arrow-right text-xs"></i>
-                    <span>Submit for Approval</span>
-                </button>
+            <div class="space-y-2 border-t border-slate-100 pt-4">
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="actionFromDrawer('approve')" class="flex-1 py-2.5 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-check text-xs"></i>
+                        <span>Approve</span>
+                    </button>
 
-                <button type="button" onclick="rejectRequestDrawer()" class="flex-1 py-2.5 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                    <button type="button" onclick="actionFromDrawer('release')" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-stamp text-xs"></i>
+                        <span>Issue Certificate</span>
+                    </button>
+                </div>
+
+                <button type="button" onclick="actionFromDrawer('reject')" class="w-full py-2 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-xmark text-xs"></i>
-                    <span>Reject</span>
+                    <span>Reject Request</span>
                 </button>
             </div>
 
@@ -453,7 +416,7 @@ $requests = [
 
 </main>
 
-<!-- SECTION 4.1 NEW REQUEST ENCODING MODAL (Auto-Fill & Staff/Self-Service) -->
+<!-- NEW REQUEST ENCODING MODAL (Connected to Backend Database) -->
 <div id="newRequestModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
         
@@ -464,7 +427,7 @@ $requests = [
                 </div>
                 <div>
                     <h3 class="text-base font-black text-slate-900">Encode New Certificate Request</h3>
-                    <p class="text-xs text-slate-500 font-medium">Select Citizen from Registry to auto-fill details and reduce encoding errors</p>
+                    <p class="text-xs text-slate-500 font-medium">Submit directly to the central certificate registry</p>
                 </div>
             </div>
             <button onclick="closeNewRequestModal()" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition flex items-center justify-center cursor-pointer">
@@ -473,154 +436,134 @@ $requests = [
         </div>
 
         <div class="space-y-4 text-xs">
-            <!-- Request Entry Mode Switcher -->
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-                <div>
-                    <span class="font-bold text-slate-900 block text-xs">Encoding Channel / Source</span>
-                    <span class="text-[11px] text-slate-500 font-medium">Staff Walk-in Encoding vs Citizen Portal Submission</span>
-                </div>
-                <select id="encodingSource" class="bg-white border border-slate-200 text-slate-800 font-bold rounded-lg px-2.5 py-1.5 outline-none cursor-pointer text-xs">
-                    <option value="Walk-in Staff">Staff Encoded (Walk-in)</option>
-                    <option value="Citizen Self-Service">Citizen Portal (Online)</option>
-                </select>
-            </div>
-
             <!-- Auto-Fill Citizen Selection Dropdown -->
             <div class="p-3.5 bg-blue-50/50 border border-blue-100 rounded-xl space-y-2">
                 <div class="flex items-center justify-between">
                     <label class="font-black text-slate-900 text-xs flex items-center gap-1.5">
                         <i class="fa-solid fa-id-card text-[#0f53d1]"></i>
-                        <span>Select Citizen from Registry (Auto-Fill)</span>
+                        <span>Select Registered Citizen (Auto-Fill)</span>
                     </label>
-                    <span class="text-[10px] font-bold text-[#0f53d1]">Auto-populates fields</span>
+                    <span class="text-[10px] font-bold text-[#0f53d1]">Verified registry</span>
                 </div>
                 <select id="citizenRegistrySelect" onchange="autoFillCitizenDetails(this.value)" class="w-full bg-white border border-slate-200 text-slate-800 font-bold rounded-xl p-2.5 outline-none text-xs cursor-pointer">
                     <option value="">-- Choose Citizen to Auto-Fill --</option>
-                    <option value="CTZ-2025-0142">CTZ-2025-0142 - Juan Dela Cruz (Barangay 178, Camarin)</option>
-                    <option value="CTZ-2025-0189">CTZ-2025-0189 - Maria Santos (Barangay 176, Bagong Silang)</option>
-                    <option value="CTZ-2025-0210">CTZ-2025-0210 - Ana Marie Reyes (Barangay 12, Caloocan)</option>
+                    <?php foreach ($registeredCitizens as $cid => $cit): ?>
+                    <option value="<?php echo $cid; ?>"><?php echo "{$cid} - {$cit['name']} ({$cit['address']})"; ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
 
-            <!-- Auto-Filled Requester Details Fields -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Form Fields Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">Requester Full Name <span class="text-rose-500">*</span></label>
-                    <input type="text" id="reqFullName" placeholder="e.g., Juan Dela Cruz" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-2.5 outline-none font-medium text-xs">
+                    <label class="font-bold text-slate-700 block mb-1">Applicant Full Name *</label>
+                    <input type="text" id="encodeName" placeholder="e.g. Danny Espelita Jr" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0f53d1]">
                 </div>
 
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">Citizen ID Number</label>
-                    <input type="text" id="reqCitizenId" placeholder="e.g., CTZ-2025-0142" readonly class="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-xl p-2.5 outline-none font-medium text-xs cursor-not-allowed">
+                    <label class="font-bold text-slate-700 block mb-1">Contact Mobile Number *</label>
+                    <input type="text" id="encodeContact" placeholder="09171234567" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0f53d1]">
                 </div>
-            </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label class="font-bold text-slate-700 block mb-1">Residential Address</label>
-                    <input type="text" id="reqAddress" placeholder="Barangay & District, Caloocan City" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-2.5 outline-none font-medium text-xs">
+                <div class="md:col-span-2">
+                    <label class="font-bold text-slate-700 block mb-1">Residential Street Address *</label>
+                    <input type="text" id="encodeAddress" placeholder="House/Lot No., Street" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0f53d1]">
                 </div>
 
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">Contact Mobile Number</label>
-                    <input type="text" id="reqContact" placeholder="09XX XXX XXXX" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-2.5 outline-none font-medium text-xs">
-                </div>
-            </div>
-
-            <!-- Certificate Type & Purpose Selectors -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label class="font-bold text-slate-700 block mb-1">Certificate Type <span class="text-rose-500">*</span></label>
-                    <select id="reqCertType" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-2.5 outline-none font-medium text-xs cursor-pointer">
-                        <option value="Barangay Clearance">Barangay Clearance</option>
-                        <option value="Certificate of Residency">Certificate of Residency</option>
-                        <option value="Certificate of Indigency">Certificate of Indigency</option>
-                        <option value="Business Permit Clearance">Business Permit Clearance</option>
-                        <option value="Certificate of Good Moral Character">Certificate of Good Moral Character</option>
-                        <option value="First-Time Jobseeker Certificate (RA 11261)">First-Time Jobseeker Certificate (RA 11261)</option>
+                    <label class="font-bold text-slate-700 block mb-1">Barangay Location *</label>
+                    <select id="encodeBarangay" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs outline-none font-bold">
+                        <option value="Barangay 171 (Bagumbong)">Barangay 171 (Bagumbong)</option>
+                        <option value="Barangay 176 (Bagong Silang)">Barangay 176 (Bagong Silang)</option>
+                        <option value="Barangay 178 (Camarin)">Barangay 178 (Camarin)</option>
+                        <option value="Barangay 12 (Grace Park)">Barangay 12 (Grace Park)</option>
+                        <option value="Barangay 88 (Caloocan South)">Barangay 88 (Caloocan South)</option>
                     </select>
                 </div>
 
                 <div>
-                    <label class="font-bold text-slate-700 block mb-1">Purpose of Request <span class="text-rose-500">*</span></label>
-                    <select id="reqPurpose" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl p-2.5 outline-none font-medium text-xs cursor-pointer">
-                        <option value="Employment Requirement">Employment Requirement (Local / OFW)</option>
-                        <option value="School Requirement & Scholarship">School Requirement & Scholarship</option>
-                        <option value="Loan Application & Bank Account">Loan Application & Bank Account</option>
-                        <option value="Government Transaction (SSS/GSIS/Passport)">Government Transaction (SSS/GSIS/Passport)</option>
-                        <option value="Medical & Financial Assistance">Medical & Financial Assistance</option>
-                        <option value="New Business Permit Registration">New Business Permit Registration</option>
+                    <label class="font-bold text-slate-700 block mb-1">Certificate Type *</label>
+                    <select id="encodeCertType" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs outline-none font-bold">
+                        <option value="Barangay Certificate">Barangay Certificate (₱50.00)</option>
+                        <option value="Barangay Clearance">Barangay Clearance (₱75.00)</option>
+                        <option value="Certificate of Residency">Certificate of Residency (₱50.00)</option>
+                        <option value="Certificate of Indigency">Certificate of Indigency (FREE)</option>
+                        <option value="First-Time Jobseeker Certificate (RA 11261)">First-Time Jobseeker (FREE)</option>
+                        <option value="Business Permit Clearance">Business Permit Clearance (₱200.00)</option>
+                        <option value="Certificate of Good Moral Character">Good Moral Character (₱50.00)</option>
                     </select>
                 </div>
-            </div>
 
-            <!-- Upload Supporting Documents -->
-            <div>
-                <label class="font-bold text-slate-700 block mb-1">Upload Supporting Documents (Valid ID, Proof of Address)</label>
-                <input type="file" id="reqDocUpload" multiple class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-xl p-2 outline-none font-medium text-xs file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#0f53d1] file:text-white cursor-pointer">
+                <div class="md:col-span-2">
+                    <label class="font-bold text-slate-700 block mb-1">Application Purpose *</label>
+                    <input type="text" id="encodePurpose" placeholder="e.g. Local Employment / Scholarship / Hospital Requirement" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-[#0f53d1]">
+                </div>
             </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
-            <button onclick="closeNewRequestModal()" class="px-4 py-2.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer">Cancel</button>
-            <button onclick="submitNewRequest()" class="px-5 py-2.5 text-xs font-bold text-white bg-[#0f53d1] hover:bg-[#0d46b0] rounded-xl transition shadow-xs cursor-pointer flex items-center gap-1.5">
-                <i class="fa-solid fa-paper-plane text-xs"></i>
-                <span>Submit Request</span>
+        <div class="flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
+            <button onclick="closeNewRequestModal()" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl transition cursor-pointer">
+                Cancel
+            </button>
+            <button id="encodeSubmitBtn" onclick="submitEncodedRequest()" class="px-5 py-2.5 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5">
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>Save to Database</span>
             </button>
         </div>
+
     </div>
 </div>
 
 <script>
-const citizenRegistry = <?php echo json_encode($citizenRegistry); ?>;
-const requestsData = <?php echo json_encode(array_column($requests, null, 'id')); ?>;
-
+const requestsDataset = <?php echo json_encode(array_column($requests, null, 'id')); ?>;
+const citizenRegistry = <?php echo json_encode($registeredCitizens); ?>;
 let activeRequestId = null;
 
-function autoFillCitizenDetails(id) {
-    const data = citizenRegistry[id];
-    if (data) {
-        document.getElementById('reqFullName').value = data.name;
-        document.getElementById('reqCitizenId').value = data.id;
-        document.getElementById('reqAddress').value = data.address;
-        document.getElementById('reqContact').value = data.contact;
-    } else {
-        document.getElementById('reqFullName').value = '';
-        document.getElementById('reqCitizenId').value = '';
-        document.getElementById('reqAddress').value = '';
-        document.getElementById('reqContact').value = '';
-    }
+function refreshRequestsQueue() {
+    const icon = document.getElementById('certRefreshIcon');
+    if (icon) icon.classList.add('fa-spin');
+    window.location.reload();
 }
 
-function selectRequestRow(rowElement, id) {
+function selectRequestRow(rowElement, refId) {
     const drawer = document.getElementById('requestDetailsDrawer');
     const tableContainer = document.getElementById('requestTableContainer');
+    const data = requestsDataset[refId];
 
-    if (activeRequestId === id && drawer && !drawer.classList.contains('hidden')) {
-        closeRequestDrawer();
-        return;
-    }
-
-    activeRequestId = id;
-    document.querySelectorAll('.request-row').forEach(r => {
-        r.classList.remove('bg-blue-50/40', 'bg-blue-50/60');
-    });
-    rowElement.classList.add('bg-blue-50/40');
-
-    const data = requestsData[id];
     if (!data) return;
 
+    activeRequestId = refId;
+
+    document.querySelectorAll('.request-row').forEach(r => r.classList.remove('bg-blue-50/40'));
+    if (rowElement) rowElement.classList.add('bg-blue-50/40');
+
     document.getElementById('drawerReqId').innerText = data.id;
+    document.getElementById('drawerReqStatus').innerText = data.status;
     document.getElementById('drawerRequesterName').innerText = data.requester;
     document.getElementById('drawerCitizenId').innerText = data.citizen_id;
     document.getElementById('drawerRequesterAddress').innerText = data.address;
     document.getElementById('drawerCertType').innerText = data.cert_type;
     document.getElementById('drawerPurpose').innerText = data.purpose;
-    document.getElementById('drawerDateRequested').innerText = data.date_requested;
+    document.getElementById('drawerFee').innerText = '₱' + data.fee_amount;
+    document.getElementById('drawerPaymentStatus').innerText = data.payment_status;
+    document.getElementById('drawerContact').innerText = data.contact;
 
-    const statusBadge = document.getElementById('drawerReqStatus');
-    statusBadge.innerText = data.status;
-    statusBadge.className = `px-2 py-0.5 text-[10px] font-bold rounded-full border ${data.status_class}`;
+    const docsList = document.getElementById('drawerDocsList');
+    if (data.docs && data.docs.length > 0) {
+        docsList.innerHTML = '';
+        data.docs.forEach(doc => {
+            docsList.innerHTML += `
+                <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2 truncate">
+                        <i class="fa-solid fa-file-lines text-blue-500 text-sm shrink-0"></i>
+                        <span class="font-bold text-slate-800 text-[11px] truncate">${doc}</span>
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        docsList.innerHTML = '<span class="text-xs text-slate-400 italic">No attachments provided</span>';
+    }
 
     if (drawer) {
         drawer.classList.remove('hidden');
@@ -630,9 +573,7 @@ function selectRequestRow(rowElement, id) {
 
 function closeRequestDrawer() {
     activeRequestId = null;
-    document.querySelectorAll('.request-row').forEach(r => {
-        r.classList.remove('bg-blue-50/40', 'bg-blue-50/60');
-    });
+    document.querySelectorAll('.request-row').forEach(r => r.classList.remove('bg-blue-50/40'));
     const drawer = document.getElementById('requestDetailsDrawer');
     const tableContainer = document.getElementById('requestTableContainer');
     if (drawer) drawer.classList.add('hidden');
@@ -664,16 +605,8 @@ function filterRequestsTable() {
         }
     });
 
-    const noRow = document.getElementById('noRequestsRow');
-    if (noRow) {
-        if (visibleCount === 0) {
-            noRow.classList.remove('hidden');
-            noRow.style.display = '';
-        } else {
-            noRow.classList.add('hidden');
-            noRow.style.display = 'none';
-        }
-    }
+    const countBadge = document.getElementById('requestsCountBadge');
+    if (countBadge) countBadge.innerText = `(${visibleCount} requests)`;
 }
 
 function resetRequestFilters() {
@@ -691,35 +624,121 @@ function closeNewRequestModal() {
     document.getElementById('newRequestModal').classList.add('hidden');
 }
 
-function submitNewRequest() {
-    const name = document.getElementById('reqFullName').value.trim();
-    const certType = document.getElementById('reqCertType').value;
-    const purpose = document.getElementById('reqPurpose').value;
+function autoFillCitizenDetails(cid) {
+    if (!cid || !citizenRegistry[cid]) return;
+    const c = citizenRegistry[cid];
+    document.getElementById('encodeName').value = c.name;
+    document.getElementById('encodeContact').value = c.contact;
+    document.getElementById('encodeAddress').value = c.address;
+}
 
-    if (!name) {
-        alert('Please enter or auto-fill Requester Full Name.');
+async function submitEncodedRequest() {
+    const name = document.getElementById('encodeName').value.trim();
+    const contact = document.getElementById('encodeContact').value.trim();
+    const address = document.getElementById('encodeAddress').value.trim();
+    const barangay = document.getElementById('encodeBarangay').value;
+    const certType = document.getElementById('encodeCertType').value;
+    const purpose = document.getElementById('encodePurpose').value.trim();
+
+    if (!name || !address || !purpose) {
+        alert('Please fill out all required fields marked with *');
         return;
     }
 
-    const newId = `REQ-2025-0${Math.floor(Math.random() * 900) + 100}`;
-    alert(`Request ${newId} for "${certType}" requested by "${name}" has been encoded successfully!`);
-    closeNewRequestModal();
-}
+    const btn = document.getElementById('encodeSubmitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving...';
 
-function forwardToApproval() {
-    if (!activeRequestId) return;
-    alert(`Request ${activeRequestId} forwarded to Barangay Captain Pending Approvals queue!`);
-}
+    try {
+        const res = await fetch('../../api/citizen/request-certificate.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+                applicant_name: name,
+                contact_number: contact,
+                street_address: address,
+                barangay: barangay,
+                certificate_type: certType,
+                purpose: purpose,
+                encoded_by: 'Staff Walk-in Desk'
+            })
+        });
 
-function rejectRequestDrawer() {
-    if (!activeRequestId) return;
-    if (confirm(`Reject request ${activeRequestId}? Notification will be sent to requester.`)) {
-        closeRequestDrawer();
+        const data = await res.json();
+        if (data && data.status === 'success') {
+            alert(`Certificate request created! Reference No: ${data.data.reference_no}`);
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Could not save request'));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save to Database';
+        }
+    } catch (err) {
+        console.error('Submit error:', err);
+        alert('Network error connecting to database.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save to Database';
     }
 }
 
+async function processQuickAction(action, refId) {
+    const label = action === 'approve' ? 'Approve & Mark Ready for Release' : (action === 'release' ? 'Issue & Release Certificate' : action);
+    if (!confirm(`Are you sure you want to ${label} for request ${refId}?`)) return;
+
+    try {
+        const res = await fetch('../../api/admin/certificate-actions.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ action: action, reference_no: refId })
+        });
+        const data = await res.json();
+        if (data && data.status === 'success') {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Failed: ' + (data.message || 'Unknown error'));
+        }
+    } catch (err) {
+        alert('Error connecting to backend.');
+    }
+}
+
+function actionFromDrawer(action) {
+    if (!activeRequestId) return;
+    processQuickAction(action, activeRequestId);
+}
+
 function exportRequestsCSV() {
-    alert('Exporting Certificate Requests Directory (CSV)...');
+    if (!requestsDataset || Object.keys(requestsDataset).length === 0) {
+        alert('No requests available to export.');
+        return;
+    }
+
+    const headers = ['Reference No', 'Requester', 'Citizen ID', 'Certificate Type', 'Purpose', 'Barangay Address', 'Contact', 'Fee Amount', 'Payment Status', 'Status', 'Date Requested'];
+    const rows = [headers.join(',')];
+
+    Object.values(requestsDataset).forEach(r => {
+        const row = [
+            `"${(r.id || '').replace(/"/g, '""')}"`,
+            `"${(r.requester || '').replace(/"/g, '""')}"`,
+            `"${(r.citizen_id || '').replace(/"/g, '""')}"`,
+            `"${(r.cert_type || '').replace(/"/g, '""')}"`,
+            `"${(r.purpose || '').replace(/"/g, '""')}"`,
+            `"${(r.address || '').replace(/"/g, '""')}"`,
+            `"${(r.contact || '').replace(/"/g, '""')}"`,
+            `"${(r.fee_amount || '').replace(/"/g, '""')}"`,
+            `"${(r.payment_status || '').replace(/"/g, '""')}"`,
+            `"${(r.status || '').replace(/"/g, '""')}"`,
+            `"${(r.date_requested || '').replace(/"/g, '""')}"`
+        ];
+        rows.push(row.join(','));
+    });
+
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Caloocan_Certificate_Requests_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
 }
 </script>
 
