@@ -20,6 +20,18 @@ $anonPct = $totalTickets > 0 ? round(($anonymousTickets / $totalTickets) * 100, 
 $stmt = $pdo->query("SELECT * FROM `citizen_concerns` ORDER BY `concern_id` DESC");
 $dbConcerns = $stmt->fetchAll();
 
+// Available Caloocan Departments for Routing
+$caloocanDepartments = [
+    'City Engineering & Public Works Office',
+    'Environmental / Waste Management Department',
+    'Caloocan Flood Control & Drainage Bureau',
+    'Public Safety Electrical Division',
+    'Caloocan Public Safety & Police Bureau (CPTMD)',
+    'City Environment & Natural Resources Office',
+    'Caloocan Public Assistance Bureau',
+    'Barangay Peacekeeping Action Team (Tanod)'
+];
+
 // Transform records for rendering
 $concerns = [];
 foreach ($dbConcerns as $row) {
@@ -74,6 +86,8 @@ foreach ($dbConcerns as $row) {
         'sub_category' => $row['sub_category'] ?? '',
         'category_color' => $catColor,
         'submitted_by' => $row['is_anonymous'] ? 'Anonymous Resident' : $row['citizen_name'],
+        'citizen_phone' => $row['is_anonymous'] ? 'Confidential / Masked' : ($row['citizen_phone'] ?: 'None'),
+        'citizen_email' => $row['is_anonymous'] ? 'Confidential / Masked' : ($row['citizen_email'] ?: 'None'),
         'is_anonymous' => (bool)$row['is_anonymous'],
         'citizen_id' => $row['is_anonymous'] ? 'ANON-' . substr(md5($row['ticket_number']), 0, 4) : ($row['citizen_user_id'] ? 'CTZ-' . str_pad($row['citizen_user_id'], 4, '0', STR_PAD_LEFT) : 'CTZ-APP'),
         'date_filed' => date('M j, Y • h:i A', strtotime($row['created_at'])),
@@ -90,6 +104,8 @@ foreach ($dbConcerns as $row) {
         'assigned_dept' => $row['assigned_department'] ?? 'Unassigned',
         'ai_detected_category' => $row['ai_detected_category'] ?? $row['category'],
         'ai_confidence_score' => $row['ai_confidence_score'] ?? '95%',
+        'resolution_notes' => $row['resolution_notes'] ?? '',
+        'resolved_at' => $row['resolved_at'] ? date('M j, Y • h:i A', strtotime($row['resolved_at'])) : null,
         'updates_count' => ($row['status'] === 'Resolved' ? 4 : ($row['status'] === 'In Progress' ? 3 : ($row['status'] === 'Routed' ? 2 : 1)))
     ];
 }
@@ -128,7 +144,12 @@ foreach ($dbConcerns as $row) {
         </div>
 
         <div class="flex items-center gap-2.5 flex-wrap">
-            <button onclick="exportConcernsReport()" class="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer">
+            <button onclick="refreshQueue()" class="px-3.5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer" title="Refresh table data from MySQL">
+                <i id="refreshIcon" class="fa-solid fa-arrows-rotate text-slate-400"></i>
+                <span>Refresh Queue</span>
+            </button>
+
+            <button onclick="exportConcernsReport()" class="px-3.5 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer">
                 <i class="fa-solid fa-download text-slate-400"></i>
                 <span>Export Tickets</span>
             </button>
@@ -342,7 +363,7 @@ foreach ($dbConcerns as $row) {
                                     </span>
                                 </td>
                                 <td class="py-3.5 px-3 text-center" onclick="event.stopPropagation();">
-                                    <button onclick="selectConcernRow(this.closest('tr'), '<?php echo $item['id']; ?>')" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-[#0f53d1] hover:text-white text-slate-600 transition flex items-center justify-center cursor-pointer shadow-2xs">
+                                    <button onclick="selectConcernRow(this.closest('tr'), '<?php echo $item['id']; ?>')" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-[#0f53d1] hover:text-white text-slate-600 transition flex items-center justify-center cursor-pointer shadow-2xs" title="Open Ticket Inspector">
                                         <i class="fa-solid fa-chevron-right text-xs"></i>
                                     </button>
                                 </td>
@@ -372,16 +393,20 @@ foreach ($dbConcerns as $row) {
             <!-- Subject & Body -->
             <div class="space-y-2">
                 <h4 id="drawerTitle" class="text-sm font-black text-slate-900 leading-snug">Concern Subject Title</h4>
-                <p id="drawerFullText" class="text-xs text-slate-600 font-normal leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200/70 max-h-48 overflow-y-auto custom-scrollbar">
+                <p id="drawerFullText" class="text-xs text-slate-600 font-normal leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200/70 max-h-40 overflow-y-auto custom-scrollbar">
                     Detailed concern description will display here...
                 </p>
             </div>
 
             <!-- Details Table -->
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs">
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
                 <div class="flex items-center justify-between text-[11px]">
                     <span class="text-slate-400 font-medium">Submitted By</span>
                     <span id="drawerSubmittedBy" class="font-bold text-slate-800">Pedro Reyes</span>
+                </div>
+                <div class="flex items-center justify-between text-[11px]">
+                    <span class="text-slate-400 font-medium">Contact Phone</span>
+                    <span id="drawerPhone" class="font-bold text-slate-800">09171234567</span>
                 </div>
                 <div class="flex items-center justify-between text-[11px]">
                     <span class="text-slate-400 font-medium">Category</span>
@@ -392,49 +417,71 @@ foreach ($dbConcerns as $row) {
                     <span id="drawerLocation" class="font-bold text-slate-800 truncate max-w-[170px]">Camarin Road, Caloocan</span>
                 </div>
                 <div class="flex items-center justify-between text-[11px]">
-                    <span class="text-slate-400 font-medium">Assigned Dept</span>
-                    <span id="drawerDept" class="font-bold text-slate-800 truncate max-w-[170px]">Engineering & Works</span>
-                </div>
-                <div class="flex items-center justify-between text-[11px]">
                     <span class="text-slate-400 font-medium">AI Confidence</span>
                     <span id="drawerAiScore" class="font-bold text-emerald-600">98% Engine</span>
                 </div>
             </div>
 
+            <!-- Dynamic Re-routing & Priority Controls (MySQL Wired) -->
+            <div class="space-y-3 p-3 bg-blue-50/40 border border-blue-100 rounded-xl text-xs">
+                <div>
+                    <label class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-1">
+                        <i class="fa-solid fa-building-flag text-[#0f53d1] mr-1"></i> Assigned Department
+                    </label>
+                    <select id="drawerDeptSelect" onchange="updateTicketDepartment(this.value)" class="w-full bg-white border border-slate-200 text-slate-800 text-xs font-bold rounded-lg p-2 outline-none cursor-pointer focus:ring-1 focus:ring-[#0f53d1]">
+                        <?php foreach ($caloocanDepartments as $dept): ?>
+                        <option value="<?php echo htmlspecialchars($dept); ?>"><?php echo htmlspecialchars($dept); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-1">
+                        <i class="fa-solid fa-signal text-amber-500 mr-1"></i> Priority Level
+                    </label>
+                    <select id="drawerPrioritySelect" onchange="updateTicketPriority(this.value)" class="w-full bg-white border border-slate-200 text-slate-800 text-xs font-bold rounded-lg p-2 outline-none cursor-pointer focus:ring-1 focus:ring-[#0f53d1]">
+                        <option value="Urgent">Urgent (4-Hour SLA)</option>
+                        <option value="High">High (24-Hour SLA)</option>
+                        <option value="Medium">Medium (48-Hour SLA)</option>
+                        <option value="Low">Low (72-Hour SLA)</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Evidence Attachments Container -->
             <div class="space-y-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Attached Evidence</span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Attached Photo Evidence</span>
                 <div id="drawerAttachmentsContainer" class="flex items-center gap-2 flex-wrap">
                     <div class="text-[11px] text-slate-400 italic">No attachments</div>
                 </div>
             </div>
 
-            <!-- Quick Status Update Actions -->
+            <!-- Resolution Notes & Staff Actions Taken -->
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Action Taken / Resolution Notes</label>
+                <textarea id="drawerResolutionNotes" rows="2" placeholder="Record action taken by municipal department crew..." class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium rounded-xl p-2.5 outline-none focus:ring-1 focus:ring-[#0f53d1]"></textarea>
+                <button onclick="saveResolutionNotes()" class="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] rounded-lg transition">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> Save Staff Notes
+                </button>
+            </div>
+
+            <!-- Quick Status Transition Buttons (MySQL Wired) -->
             <div class="space-y-2 pt-2 border-t border-slate-100">
-                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Update Ticket Status</label>
-                <div class="grid grid-cols-3 gap-1.5">
-                    <button onclick="updateTicketStatus('In Progress')" class="py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] rounded-lg border border-indigo-200 transition">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Transition Status</label>
+                <div class="grid grid-cols-4 gap-1.5">
+                    <button onclick="updateTicketStatus('Under Review')" class="py-2 px-1 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[10px] rounded-lg border border-amber-200 transition text-center" title="Mark Under Review">
+                        Review
+                    </button>
+                    <button onclick="updateTicketStatus('In Progress')" class="py-2 px-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] rounded-lg border border-indigo-200 transition text-center" title="Field Unit Dispatched">
                         In Progress
                     </button>
-                    <button onclick="updateTicketStatus('Resolved')" class="py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[10px] rounded-lg border border-emerald-200 transition">
+                    <button onclick="updateTicketStatus('Resolved')" class="py-2 px-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[10px] rounded-lg border border-emerald-200 transition text-center" title="Issue Solved">
                         Resolve
                     </button>
-                    <button onclick="updateTicketStatus('Closed')" class="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] rounded-lg border border-slate-300 transition">
+                    <button onclick="updateTicketStatus('Closed')" class="py-2 px-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] rounded-lg border border-slate-300 transition text-center" title="Close Case">
                         Close
                     </button>
                 </div>
-            </div>
-
-            <!-- Action Navigation Buttons -->
-            <div class="flex items-center gap-2 border-t border-slate-100 pt-3">
-                <a href="ai-analysis-results.php" class="flex-1 py-2.5 bg-[#0f53d1] hover:bg-[#0d46b0] text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-robot text-xs"></i>
-                    <span>Run AI Analysis</span>
-                </a>
-                <a href="concern-routing.php" class="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-route text-xs"></i>
-                    <span>Route Ticket</span>
-                </a>
             </div>
 
         </div>
@@ -535,6 +582,12 @@ foreach ($dbConcerns as $row) {
 const concernsData = <?php echo json_encode(array_column($concerns, null, 'id')); ?>;
 let activeConcernId = null;
 
+function refreshQueue() {
+    const icon = document.getElementById('refreshIcon');
+    if (icon) icon.classList.add('fa-spin');
+    window.location.reload();
+}
+
 function selectConcernRow(rowElement, id) {
     const drawer = document.getElementById('concernDetailsDrawer');
     const tableContainer = document.getElementById('concernsTableContainer');
@@ -559,11 +612,25 @@ function selectConcernRow(rowElement, id) {
     document.getElementById('drawerTitle').innerText = data.title;
     document.getElementById('drawerFullText').innerText = data.full_text;
     document.getElementById('drawerSubmittedBy').innerText = data.submitted_by;
+    document.getElementById('drawerPhone').innerText = data.citizen_phone || 'None';
     document.getElementById('drawerCategory').innerText = data.category;
     document.getElementById('drawerLocation').innerText = data.location;
-    document.getElementById('drawerDept').innerText = data.assigned_dept;
     document.getElementById('drawerAiScore').innerText = data.ai_confidence_score || '95% Gemini Engine';
+    document.getElementById('drawerResolutionNotes').value = data.resolution_notes || '';
 
+    // Set Dept Select
+    const deptSelect = document.getElementById('drawerDeptSelect');
+    if (deptSelect && data.assigned_dept) {
+        deptSelect.value = data.assigned_dept;
+    }
+
+    // Set Priority Select
+    const prioSelect = document.getElementById('drawerPrioritySelect');
+    if (prioSelect && data.priority) {
+        prioSelect.value = data.priority;
+    }
+
+    // Set Status Badge
     const statusBadge = document.getElementById('drawerStatusBadge');
     if (statusBadge) {
         statusBadge.innerText = data.status;
@@ -714,7 +781,7 @@ async function updateTicketStatus(newStatus) {
         return;
     }
 
-    if (!confirm(`Are you sure you want to mark ticket ${activeConcernId} as "${newStatus}"?`)) {
+    if (!confirm(`Are you sure you want to change ticket ${activeConcernId} status to "${newStatus}"?`)) {
         return;
     }
 
@@ -727,20 +794,102 @@ async function updateTicketStatus(newStatus) {
             },
             body: JSON.stringify({
                 ticket_number: activeConcernId,
-                status: newStatus
+                status: newStatus,
+                resolution_notes: document.getElementById('drawerResolutionNotes').value.trim()
             })
         });
 
         const data = await res.json();
         if (data && data.status === 'success') {
-            alert(`Ticket ${activeConcernId} status updated to "${newStatus}"!`);
+            alert(`Ticket ${activeConcernId} updated to "${newStatus}" in MySQL!`);
             window.location.reload();
         } else {
             alert('Failed to update ticket: ' + (data.message || 'Unknown error'));
         }
     } catch (err) {
         console.error('Update error:', err);
-        alert('Error communicating with backend.');
+        alert('Error communicating with backend database.');
+    }
+}
+
+async function updateTicketDepartment(newDept) {
+    if (!activeConcernId) return;
+
+    try {
+        const res = await fetch('../../api/admin/concerns.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                ticket_number: activeConcernId,
+                assigned_department: newDept
+            })
+        });
+
+        const data = await res.json();
+        if (data && data.status === 'success') {
+            alert(`Ticket ${activeConcernId} re-routed to "${newDept}"!`);
+            window.location.reload();
+        } else {
+            alert('Failed to update department: ' + (data.message || 'Unknown error'));
+        }
+    } catch (err) {
+        console.error('Routing update error:', err);
+        alert('Error communicating with backend database.');
+    }
+}
+
+async function updateTicketPriority(newPrio) {
+    if (!activeConcernId) return;
+
+    try {
+        const res = await fetch('../../api/admin/concerns.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                ticket_number: activeConcernId,
+                priority: newPrio
+            })
+        });
+
+        const data = await res.json();
+        if (data && data.status === 'success') {
+            alert(`Ticket ${activeConcernId} priority updated to "${newPrio}"!`);
+            window.location.reload();
+        }
+    } catch (err) {
+        console.error('Priority update error:', err);
+    }
+}
+
+async function saveResolutionNotes() {
+    if (!activeConcernId) return;
+    const notes = document.getElementById('drawerResolutionNotes').value.trim();
+
+    try {
+        const res = await fetch('../../api/admin/concerns.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                ticket_number: activeConcernId,
+                resolution_notes: notes
+            })
+        });
+
+        const data = await res.json();
+        if (data && data.status === 'success') {
+            alert(`Action notes saved for ticket ${activeConcernId}!`);
+        }
+    } catch (err) {
+        console.error('Notes save error:', err);
     }
 }
 
@@ -750,7 +899,7 @@ function exportConcernsReport() {
         return;
     }
 
-    const headers = ['Ticket ID', 'Title', 'Category', 'Submitted By', 'Location', 'Barangay', 'Date Filed', 'Priority', 'Status', 'Assigned Department'];
+    const headers = ['Ticket ID', 'Title', 'Category', 'Submitted By', 'Contact Phone', 'Location', 'Barangay', 'Date Filed', 'Priority', 'Status', 'Assigned Department', 'Resolution Notes'];
     const rows = [headers.join(',')];
 
     Object.values(concernsData).forEach(c => {
@@ -759,12 +908,14 @@ function exportConcernsReport() {
             `"${(c.title || '').replace(/"/g, '""')}"`,
             `"${(c.category || '').replace(/"/g, '""')}"`,
             `"${(c.submitted_by || '').replace(/"/g, '""')}"`,
+            `"${(c.citizen_phone || '').replace(/"/g, '""')}"`,
             `"${(c.location || '').replace(/"/g, '""')}"`,
             `"${(c.barangay || '').replace(/"/g, '""')}"`,
             `"${(c.date_filed || '').replace(/"/g, '""')}"`,
             `"${(c.priority || '').replace(/"/g, '""')}"`,
             `"${(c.status || '').replace(/"/g, '""')}"`,
-            `"${(c.assigned_dept || '').replace(/"/g, '""')}"`
+            `"${(c.assigned_dept || '').replace(/"/g, '""')}"`,
+            `"${(c.resolution_notes || '').replace(/"/g, '""')}"`
         ];
         rows.push(row.join(','));
     });
