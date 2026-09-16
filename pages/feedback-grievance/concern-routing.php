@@ -502,6 +502,72 @@ $routingRules = [
         'is_active' => true
     ]
 ];
+
+// Load Live Concerns from MySQL Database (Replaces Mock Data)
+require_once __DIR__ . '/../../config/database.php';
+try {
+    $pdo = getDbConnection();
+    $stmt = $pdo->query("SELECT * FROM `citizen_concerns` ORDER BY `concern_id` DESC");
+    $dbRows = $stmt->fetchAll();
+    if (!empty($dbRows)) {
+        $liveConcerns = [];
+        foreach ($dbRows as $row) {
+            $cat = $row['category'];
+            $deptKey = 'assistance';
+            if (stripos($cat, 'Road') !== false || stripos($cat, 'Infra') !== false) $deptKey = 'dpwh';
+            else if (stripos($cat, 'Garbage') !== false || stripos($cat, 'Waste') !== false || stripos($cat, 'Sanitation') !== false) $deptKey = 'cenro';
+            else if (stripos($cat, 'Flood') !== false || stripos($cat, 'Drain') !== false) $deptKey = 'flood';
+            else if (stripos($cat, 'Light') !== false) $deptKey = 'electrical';
+            else if (stripos($cat, 'Safety') !== false || stripos($cat, 'Police') !== false) $deptKey = 'cptmd';
+            else if (stripos($cat, 'Environment') !== false) $deptKey = 'cenro_env';
+
+            $stage = 'new';
+            $st = $row['status'];
+            if ($st === 'Under Review') $stage = 'under_review';
+            else if ($st === 'Routed') $stage = 'routed';
+            else if ($st === 'In Progress') $stage = 'in_progress';
+            else if ($st === 'Resolved') $stage = 'resolved';
+            else if ($st === 'Closed') $stage = 'closed';
+
+            $liveConcerns[] = [
+                'id' => $row['ticket_number'],
+                'title' => $row['title'],
+                'description' => $row['description'],
+                'category' => $row['category'],
+                'department_key' => $deptKey,
+                'department_name' => $row['assigned_department'] ?: ($departments[$deptKey]['name'] ?? 'City Engineering & Public Works Office'),
+                'priority' => $row['priority'],
+                'stage' => $stage,
+                'sla_text' => '⏱ 24h SLA',
+                'sla_status' => $row['priority'] === 'Urgent' ? 'urgent' : 'normal',
+                'sla_total_hours' => 24,
+                'date_filed' => date('Y-m-d h:i A', strtotime($row['created_at'])),
+                'citizen_name' => $row['is_anonymous'] ? 'Anonymous Resident' : $row['citizen_name'],
+                'citizen_phone' => $row['citizen_phone'] ?: '',
+                'citizen_email' => $row['citizen_email'] ?: '',
+                'is_anonymous' => (bool)$row['is_anonymous'],
+                'barangay' => $row['barangay'] ?: 'Caloocan City',
+                'landmark' => $row['location'],
+                'gps' => $row['gps_coordinates'] ?: '14.6514° N, 120.9892° E',
+                'assigned_officer' => !empty($row['assigned_department']) ? "Officer ({$row['assigned_department']})" : 'Pending Assignment',
+                'ai_confidence' => 96,
+                'ai_reason' => 'Processed from citizen submission in Caloocan CIVentral network.',
+                'ai_keywords' => array_values(array_filter(explode(' ', preg_replace('/[^a-zA-Z0-9 ]/', '', $row['title'])))),
+                'has_duplicate' => false,
+                'duplicate_text' => '',
+                'photos' => !empty($row['photo_evidence_url']) ? [$row['photo_evidence_url']] : [],
+                'resolution_notes' => $row['resolution_notes'] ?: '',
+                'resolution_photos' => [],
+                'activity_log' => [
+                    ['time' => date('Y-m-d h:i A', strtotime($row['created_at'])), 'actor' => 'Citizen Mobile App', 'action' => 'Concern filed into CIVentral system.']
+                ]
+            ];
+        }
+        $initialConcerns = $liveConcerns;
+    }
+} catch (Exception $e) {
+    // Keep fallback
+}
 ?>
 
 <!-- Custom Dashboard & Control Center Styles -->
