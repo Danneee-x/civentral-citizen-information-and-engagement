@@ -9,11 +9,13 @@ include '../../includes/sidebar.php';
 require_once __DIR__ . '/../../config/database.php';
 
 $verificationLogs = [];
+$verifyingStaffList = [];
 $counts = [
     'total' => 0,
     'passed' => 0,
     'pending' => 0,
     'failed' => 0,
+    'flagged' => 0,
     'passed_pct' => 0
 ];
 
@@ -50,11 +52,40 @@ try {
         `submitted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
+    // Self-healing columns
+    $cols = $pdo->query("SHOW COLUMNS FROM citizen_verifications")->fetchAll(PDO::FETCH_COLUMN);
+    $needed = [
+        'reviewed_by' => 'VARCHAR(100) NULL',
+        'rejection_reason' => 'TEXT NULL',
+        'reviewed_at' => 'DATETIME NULL',
+        'is_duplicate' => 'TINYINT(1) NOT NULL DEFAULT 0',
+        'duplicate_notes' => 'TEXT NULL'
+    ];
+    foreach ($needed as $col => $type) {
+        if (!in_array($col, $cols)) {
+            $pdo->exec("ALTER TABLE citizen_verifications ADD COLUMN `$col` $type");
+        }
+    }
+
+    // Check duplicate discrepancies from DB (Name + DOB matching or duplicate ID numbers)
+    $dupQuery = $pdo->query("SELECT v1.verification_id as v1_id, v2.verification_id as v2_id 
+                             FROM citizen_verifications v1
+                             JOIN citizen_verifications v2 
+                               ON v1.verification_id < v2.verification_id 
+                              AND (v1.valid_id_number = v2.valid_id_number 
+                                   OR (v1.first_name = v2.first_name AND v1.last_name = v2.last_name AND v1.birth_date = v2.birth_date))");
+    $flaggedMap = [];
+    while ($dRow = $dupQuery->fetch(PDO::FETCH_ASSOC)) {
+        $flaggedMap[$dRow['v2_id']] = $dRow['v1_id'];
+    }
+
+    // Dynamic stats query
     $statsStmt = $pdo->query("SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN verification_status = 'Approved' THEN 1 ELSE 0 END) as passed,
         SUM(CASE WHEN verification_status = 'Pending' THEN 1 ELSE 0 END) as pending,
-        SUM(CASE WHEN verification_status = 'Rejected' THEN 1 ELSE 0 END) as failed
+        SUM(CASE WHEN verification_status = 'Rejected' THEN 1 ELSE 0 END) as failed,
+        SUM(CASE WHEN is_duplicate = 1 OR verification_status = 'Under_Review' THEN 1 ELSE 0 END) as flagged_db
         FROM citizen_verifications");
     $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -62,7 +93,15 @@ try {
     $counts['passed']  = (int)($stats['passed'] ?? 0);
     $counts['pending'] = (int)($stats['pending'] ?? 0);
     $counts['failed']  = (int)($stats['failed'] ?? 0);
+    $counts['flagged'] = max((int)($stats['flagged_db'] ?? 0), count($flaggedMap));
     $counts['passed_pct'] = $counts['total'] > 0 ? round(($counts['passed'] / $counts['total']) * 100, 1) : 0;
+
+    // Distinct verifying staff from DB
+    $staffStmt = $pdo->query("SELECT DISTINCT reviewed_by FROM citizen_verifications WHERE reviewed_by IS NOT NULL AND reviewed_by != '' AND reviewed_by != 'Unassigned'");
+    $verifyingStaffList = $staffStmt->fetchAll(PDO::FETCH_COLUMN);
+    if (empty($verifyingStaffList)) {
+        $verifyingStaffList = ['Admin'];
+    }
 
     $stmt = $pdo->query("SELECT * FROM citizen_verifications ORDER BY COALESCE(reviewed_at, submitted_at) DESC LIMIT 100");
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -71,8 +110,10 @@ try {
         $fullName = trim("{$r['first_name']} {$r['middle_name']} {$r['last_name']} {$r['suffix']}");
         $dt = !empty($r['reviewed_at']) ? new DateTime($r['reviewed_at']) : new DateTime($r['submitted_at']);
         
+        $isDup = isset($flaggedMap[$r['verification_id']]) || !empty($r['is_duplicate']) || $r['verification_status'] === 'Under_Review';
+
         $result = 'Under Review';
-        $badge = 'bg-amber-50 text-amber-600 border-amber-200';
+        $badge = 'bg-blue-50 text-blue-600 border-blue-200';
         $remarks = 'Pending administrative review and biometric verification against city civil registry.';
 
         if ($r['verification_status'] === 'Approved') {
@@ -83,7 +124,20 @@ try {
             $result = 'Failed';
             $badge = 'bg-rose-50 text-rose-600 border-rose-200';
             $remarks = !empty($r['rejection_reason']) ? $r['rejection_reason'] : 'Discrepancy detected during validation.';
+        } elseif ($isDup) {
+            $result = 'Flagged';
+            $badge = 'bg-amber-50 text-amber-600 border-amber-200';
+            if (isset($flaggedMap[$r['verification_id']])) {
+                $matchId = 'VER-' . str_pad($flaggedMap[$r['verification_id']], 4, '0', STR_PAD_LEFT);
+                $remarks = "Name / ID mismatch: Potential duplicate match with Application #{$matchId}.";
+            } else {
+                $remarks = !empty($r['duplicate_notes']) ? $r['duplicate_notes'] : 'Potential duplicate profile flagged.';
+            }
         }
+
+        $verifyingStaff = !empty($r['reviewed_by']) && $r['reviewed_by'] !== 'Unassigned' 
+            ? $r['reviewed_by'] 
+            : ($result === 'Verified' || $result === 'Failed' ? 'Admin' : 'Queue (Pending Review)');
 
         $verificationLogs[] = [
             'log_id' => 'VLOG-' . str_pad($r['verification_id'], 4, '0', STR_PAD_LEFT),
@@ -91,8 +145,8 @@ try {
             'citizen_id' => 'CTZ-' . str_pad($r['verification_id'], 4, '0', STR_PAD_LEFT),
             'address' => "{$r['barangay']}, {$r['district']}, Caloocan City",
             'id_type' => $r['valid_id_type'] ?: 'National ID',
-            'verifying_staff' => !empty($r['reviewed_by']) ? $r['reviewed_by'] : 'Staff Reviewer',
-            'timestamp' => $dt->format('M j, Y • h:i A'),
+            'verifying_staff' => $verifyingStaff,
+            'timestamp' => $dt->format('M j, Y') . ' &bull; ' . $dt->format('h:i A'),
             'result' => $result,
             'result_badge' => $badge,
             'remarks' => $remarks
@@ -189,7 +243,7 @@ try {
                 </div>
             </div>
             <div>
-                <h3 class="text-2xl font-black text-slate-900 tracking-tight">42 Flagged</h3>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo number_format($counts['flagged']); ?> Flagged</h3>
                 <p class="text-[11px] font-semibold text-amber-600 flex items-center gap-1 mt-1">
                     <i class="fa-solid fa-user-gear"></i>
                     <span>Name / DOB mismatch</span>
@@ -206,7 +260,7 @@ try {
                 </div>
             </div>
             <div>
-                <h3 class="text-2xl font-black text-slate-900 tracking-tight">20 Failed</h3>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight"><?php echo number_format($counts['failed']); ?> Failed</h3>
                 <p class="text-[11px] font-semibold text-rose-600 flex items-center gap-1 mt-1">
                     <i class="fa-solid fa-ban"></i>
                     <span>Expired / Unreadable document</span>
@@ -230,6 +284,7 @@ try {
             <select id="vlogResultFilter" onchange="filterVerificationLogsTable()" class="bg-slate-50 border border-slate-200 text-slate-800 font-semibold rounded-xl py-2.5 px-3 text-xs outline-none cursor-pointer">
                 <option value="">All Verification Results</option>
                 <option value="Verified">Verified</option>
+                <option value="Under Review">Under Review</option>
                 <option value="Flagged">Flagged</option>
                 <option value="Failed">Failed</option>
             </select>
@@ -237,8 +292,9 @@ try {
             <!-- Staff Filter -->
             <select id="vlogStaffFilter" onchange="filterVerificationLogsTable()" class="bg-slate-50 border border-slate-200 text-slate-800 font-semibold rounded-xl py-2.5 px-3 text-xs outline-none cursor-pointer">
                 <option value="">All Verifying Staff</option>
-                <option value="Liza Dy">Desk Officer Liza Dy</option>
-                <option value="John Cruz">Staff John Cruz</option>
+                <?php foreach ($verifyingStaffList as $staff): ?>
+                    <option value="<?php echo htmlspecialchars($staff); ?>"><?php echo htmlspecialchars($staff); ?></option>
+                <?php endforeach; ?>
             </select>
         </div>
     </div>
@@ -266,6 +322,11 @@ try {
                     </tr>
                 </thead>
                 <tbody id="vlogTableBody" class="divide-y divide-slate-100 text-xs font-medium text-slate-700">
+                    <?php if (empty($verificationLogs)): ?>
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400 font-medium text-xs">No verification logs recorded yet.</td>
+                    </tr>
+                    <?php else: ?>
                     <?php foreach ($verificationLogs as $log): ?>
                     <tr class="vlog-row hover:bg-slate-50 transition select-none" data-result="<?php echo htmlspecialchars($log['result']); ?>" data-staff="<?php echo htmlspecialchars($log['verifying_staff']); ?>">
                         <td class="py-3.5 px-4">
@@ -292,6 +353,7 @@ try {
                         </td>
                     </tr>
                     <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -301,6 +363,8 @@ try {
 </main>
 
 <script>
+const verificationLogsData = <?php echo json_encode($verificationLogs); ?>;
+
 function filterVerificationLogsTable() {
     const searchVal = document.getElementById('vlogSearchInput').value.toLowerCase();
     const resultVal = document.getElementById('vlogResultFilter').value.toLowerCase();
@@ -314,15 +378,54 @@ function filterVerificationLogsTable() {
         const staff = (r.getAttribute('data-staff') || '').toLowerCase();
 
         const matchesSearch = !searchVal || text.includes(searchVal);
-        const matchesResult = !resultVal || res.includes(resultVal);
-        const matchesStaff = !staffVal || staff.includes(staffVal);
+        const matchesResult = !resultVal || res === resultVal;
+        const matchesStaff = !staffVal || staff === staffVal;
 
         r.style.display = (matchesSearch && matchesResult && matchesStaff) ? '' : 'none';
     });
 }
 
 function exportVerificationAuditCSV() {
-    alert('Exporting Read-Only ID Verification Audit Trail (CSV)...');
+    if (!verificationLogsData || verificationLogsData.length === 0) {
+        alert('No verification audit logs to export.');
+        return;
+    }
+
+    const headers = [
+        'Log ID',
+        'Citizen ID',
+        'Citizen Name',
+        'Address',
+        'Government ID Type Checked',
+        'Verifying Staff Officer',
+        'Date & Timestamp',
+        'Result',
+        'Staff Verification Remarks'
+    ];
+
+    const rows = verificationLogsData.map(log => [
+        `"${log.log_id}"`,
+        `"${log.citizen_id}"`,
+        `"${(log.citizen_name || '').replace(/"/g, '""')}"`,
+        `"${(log.address || '').replace(/"/g, '""')}"`,
+        `"${(log.id_type || '').replace(/"/g, '""')}"`,
+        `"${(log.verifying_staff || '').replace(/"/g, '""')}"`,
+        `"${(log.timestamp || '').replace(/\u2022/g, '-').replace(/\s+/g, ' ').trim()}"`,
+        `"${log.result}"`,
+        `"${(log.remarks || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+        + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const today = new Date().toISOString().slice(0, 10);
+    link.setAttribute("download", `id_verification_audit_logs_${today}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 </script>
 
